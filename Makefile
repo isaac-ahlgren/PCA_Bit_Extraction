@@ -29,4 +29,5 @@ all: $(EXECUTABLE)
 
 clean:
 	rm pca_bit_gen
+	rm -f obj/*
 

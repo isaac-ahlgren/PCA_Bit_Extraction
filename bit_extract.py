@@ -17,6 +17,8 @@ def tr_bit_extract(data, vector_num, filter_range):
 
     eig_vec = np.array(output[1])
 
+    eig_vec = fix_direction(eig_vec)
+
     proj_data = (eig_vec.T).dot(data_matrix.T)
 
     proj_data = proj_data[0]
@@ -37,3 +39,13 @@ def gen_bits(proj_data):
         else:
             bits[i] = 0;
     return bits
+
+def fix_direction(eig_vec):
+    total = 0
+    for i in range(len(eig_vec)):
+        total += eig_vec[i]
+
+    if total <= 0:
+        eig_vec *= -1
+    return eig_vec
+

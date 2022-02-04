@@ -41,11 +41,5 @@ def gen_bits(proj_data):
     return bits
 
 def fix_direction(eig_vec):
-    total = 0
-    for i in range(len(eig_vec)):
-        total += eig_vec[i]
-
-    if total <= 0:
-        eig_vec *= -1
-    return eig_vec
+    return abs(eig_vec)
 

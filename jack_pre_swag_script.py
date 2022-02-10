@@ -44,6 +44,7 @@ def sample_csv(path, config_options):
     
     for i in range(buffers.shape[0]):
         stats = gen_shift_data_jack(buffers[0], buffers[i], obs_vector_length, bit_key_length, max_shift, filter_range, i)
+        #Delete this if you want to do more devices.
         exit()
     
     print(stats)

@@ -23,7 +23,7 @@ def parse_files(path):
 
 
 
-def sample_csv(path, config_options):
+def sample_csv(path, config_options,device):
     
     channels = config_options["channels"]
     obs_vector_length = config_options["obs_vector_length"]
@@ -43,14 +43,18 @@ def sample_csv(path, config_options):
                 buffers[i-1,j] = float(row[i])
     
     for i in range(buffers.shape[0]):
-        stats = gen_shift_data_jack(buffers[0], buffers[i], obs_vector_length, bit_key_length, max_shift, filter_range, i)
-        #Delete this if you want to do more devices.
-        exit()
+        stats = gen_shift_data_jack(buffers[0], buffers[i], obs_vector_length, bit_key_length, max_shift, filter_range, f"{device}_{i}")
+        #Comment/Delete this if you want to do more devices.
+        #exit()
     
     print(stats)
 
 if __name__ == "__main__":
     audio,elect = parse_files("../")
     for key in elect.keys():
-        sample_csv(elect[key], config_elec)
-        exit()
+        device = elect[key].split("_")[2]
+        if ".csv" in device:
+            device.replace(".csv","")
+        
+        sample_csv(elect[key], config_elec,device)
+        

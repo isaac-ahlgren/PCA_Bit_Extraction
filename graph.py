@@ -8,6 +8,8 @@ import os
 
 import csv
 
+MAX_PROCESSES = 25
+
 def compare_bits(bits1, bits2, bit_length):
     agreed = 0
     for i in range(bit_length):
@@ -25,30 +27,30 @@ def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, m
 
     for shift in range(max_shift):
         
-        if not os.path.exists(f"./pickled_data/{device}_{shift}"):
+        if not os.path.exists(f"./pickled_data/{device}_{shift}.npy"):
             device_samples = device_buffer[shift:(shift + vector_length*bit_length)]
             np.save(f"./pickled_data/{device}_{shift}", device_samples, allow_pickle=True)
-            break
+
 
     
     running_processes = 0
     processes = []
     index = -1
+    shift = 0
     while shift < max_shift:
-        if index == -1 and running_processes < 25:
+        if index == -1 and running_processes < MAX_PROCESSES:
             command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
             processes.append(subprocess.Popen(command, shell=True))
             running_processes+=1
             shift+=1
-        elif index >= 0 and index < 25 and running_processes < 25: 
+        elif index >= 0 and index < MAX_PROCESSES and running_processes < MAX_PROCESSES: 
             command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
             processes[index] = subprocess.Popen(command, shell=True)
             running_processes+=1
             shift+=1
             index = -1
-        elif running_processes >= 25:
+        elif running_processes >= MAX_PROCESSES:
             for i in range(len(processes)):
-                print(f"Here.")
                 if processes[i].poll() != None:
                     index = i
                     running_processes -= 1

@@ -1,10 +1,52 @@
 from scipy import linalg
 import scipy.linalg.lapack as la
 import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("data", help="path to pickeled file")
+parser.add_argument("vector_num", help="The size of the matrix")
+parser.add_argument("filter_range", help="The range to be filtered.")
+parser.add_argument("shift", help="This is not as imporant and will be used to give a file a name.")
+
+
+
+# Data is a numpy array
+def tr_bit_extract_subprocess(data, vector_num, filter_range,shift):
+    data_matrix = np.array(np.split(data, vector_num))
+    
+    vlen = len(data) // vector_num
+
+    fft_data_matrix = np.abs(np.fft.fft(data_matrix))
+
+    filter(fft_data_matrix, filter_range, vlen)
+
+    cov_matrix = np.cov(fft_data_matrix.T)
+
+    output = la.ssyevx(cov_matrix, range='I', il=vlen, iu=vlen)
+
+    eig_vec = np.array(output[1])
+
+    eig_vec = fix_direction(eig_vec)
+
+    proj_data = (eig_vec.T).dot(data_matrix.T)
+
+    proj_data = proj_data[0]
+
+    bits = gen_bits(proj_data)
+    with open(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_results/{shift}.csv", "w") as f:
+        for i in range(len(bits)):
+            bit = bits[i]
+            if i < len(bits)-1:
+                f.write(f"{bit},")
+            else:
+                f.write(f"{bit}")
+
 
 # Data is a numpy array
 def tr_bit_extract(data, vector_num, filter_range):
     data_matrix = np.array(np.split(data, vector_num))
+    
     vlen = len(data) // vector_num
 
     fft_data_matrix = np.abs(np.fft.fft(data_matrix))
@@ -42,4 +84,19 @@ def gen_bits(proj_data):
 
 def fix_direction(eig_vec):
     return abs(eig_vec)
+
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+
+    data = args.data
+    data = np.load(data)
+
+    vector_num = int(args.vector_num)
+
+    filter_range = int(args.filter_range)
+
+    shift = args.shift
+
+    tr_bit_extract_subprocess(data, vector_num, filter_range,shift)
 

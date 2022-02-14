@@ -9,7 +9,6 @@ def parse_files(path):
     electric_data = {}
     audio_data = {}
 
-
     for root, dirs, files in os.walk(path,topdown=False):
         for fi in files:
             tmp_path = root+"/"+fi
@@ -19,9 +18,6 @@ def parse_files(path):
                 audio_data[fi] = tmp_path 
     
     return audio_data,electric_data
-
-
-
 
 def sample_csv(path, config_options,device):
     
@@ -43,14 +39,14 @@ def sample_csv(path, config_options,device):
                 buffers[i-1,j] = float(row[i])
     
     for i in range(buffers.shape[0]):
-        stats = gen_shift_data_jack(buffers[0], buffers[i], obs_vector_length, bit_key_length, max_shift, filter_range, f"{device}_{i}")
+        stats = subprocesses_gen_shift_data("/home/ikey/repos/PCA_Bit_Extraction",buffers[0], buffers[i], obs_vector_length, bit_key_length, max_shift, filter_range, f"{device}_{i}")
         #Comment/Delete this if you want to do more devices.
         #exit()
     
     print(stats)
 
 if __name__ == "__main__":
-    audio,elect = parse_files("../")
+    audio,elect = parse_files("./data/electricity_data/new_doyle")
     for key in elect.keys():
         device = elect[key].split("_")[2]
         if ".csv" in device:

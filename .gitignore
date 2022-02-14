@@ -2,8 +2,6 @@
 .git/
 data/
 __pycache__/
-ml_hallway_5msa_ds4.csv
-doyle_500khz_mllab_ds20.csv
 bit_results/
 pickled_data/
 misc/

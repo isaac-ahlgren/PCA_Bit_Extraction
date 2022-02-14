@@ -17,7 +17,9 @@ def compare_bits(bits1, bits2, bit_length):
             agreed += 1
     return (agreed/bit_length)*100
 
-def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, max_shift, filter_range, device):
+def subprocesses_gen_shift_data(repo_directory, host_buffer, device_buffer, vector_length, bit_length, max_shift, filter_range, device):
+
+    # Generate bits used in host device
     stats = np.zeros(max_shift)
     host_samples = host_buffer[0:(vector_length*bit_length)]
     host_bits = tr_bit_extract(host_samples, bit_length, filter_range)
@@ -25,13 +27,10 @@ def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, m
     device_bits = []
     shift = 0
 
-    for shift in range(max_shift):
-        
-        if not os.path.exists(f"./pickled_data/{device}_{shift}.npy"):
+    for shift in range(max_shift):        
+        if not os.path.exists(f"{repo_directory}/pickled_data/{device}_{shift}.npy"):
             device_samples = device_buffer[shift:(shift + vector_length*bit_length)]
-            np.save(f"./pickled_data/{device}_{shift}", device_samples, allow_pickle=True)
-
-
+            np.save(f"{repo_directory}/pickled_data/{device}_{shift}", device_samples, allow_pickle=True)
     
     running_processes = 0
     processes = []
@@ -39,12 +38,12 @@ def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, m
     shift = 0
     while shift < max_shift:
         if index == -1 and running_processes < MAX_PROCESSES:
-            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
+            command = [f"python3 {repo_directory}/bit_extract.py {repo_directory} {repo_directory}/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
             processes.append(subprocess.Popen(command, shell=True))
             running_processes+=1
             shift+=1
         elif index >= 0 and index < MAX_PROCESSES and running_processes < MAX_PROCESSES: 
-            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
+            command = [f"python3 {repo_directory}/bit_extract.py {repo_directory} {repo_directory}/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
             processes[index] = subprocess.Popen(command, shell=True)
             running_processes+=1
             shift+=1
@@ -121,7 +120,9 @@ def graph(data, x_label, y_label, label_names):
 
 if __name__ == "__main__":
     # Parameters
-    file = "../electricity/doyle_500khz_2ndfloor_ds20.csv"
+    device = "device_2"
+    repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
+    file = repo_directory + "/data/electricity_data/new_doyle/doyle_500khz_2ndfloor_ds20.csv"
     channels = 3
     obs_vector_length = 2000
     bit_key_length = 64
@@ -137,8 +138,9 @@ if __name__ == "__main__":
             for i in range(1,channels+1):
                 buffers[i-1,j] = float(row[i])
   
-    stats = gen_shift_data(buffers[0], buffers, obs_vector_length, bit_key_length, max_shift, filter_range)
-    #stats = threaded_gen_shift_data(3, buffers[0], buffers, obs_vector_length, bit_key_length, max_shift, filter_range) 
-    label_names = ["Third Floor 1", "Third Floor 2", "ML Hallway"]
-    graph(stats, "Sample Shifts", "Bit Agreement",label_names)
+    subprocesses_gen_shift_data(repo_directory, buffers[0], buffers[2], obs_vector_length, bit_key_length, max_shift, filter_range, device)
+
+    #stats = gen_shift_data(buffers[0], buffers, obs_vector_length, bit_key_length, max_shift, filter_range) 
+    #label_names = ["Third Floor 1", "Third Floor 2", "ML Hallway"]
+    #graph(stats, "Sample Shifts", "Bit Agreement",label_names)
 

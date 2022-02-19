@@ -1,20 +1,23 @@
 from scipy import linalg
 import scipy.linalg.lapack as la
 import scipy.fftpack
+import scipy
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("data", help="path to pickeled file")
 parser.add_argument("vector_num", help="The size of the matrix")
 parser.add_argument("filter_range", help="The range to be filtered.")
 parser.add_argument("shift", help="This is not as imporant and will be used to give a file a name.")
+parser.add_argument("folder_name", help="This is not as imporant and will be used to give a file a name.")
 
 
 
 # Data is a numpy array
-def tr_bit_extract_subprocess(data, vector_num, filter_range,shift):
+def tr_bit_extract_subprocess(data, vector_num, filter_range,shift,folder_name):
     data_matrix = np.array(np.split(data, vector_num))
     
     vlen = len(data) // vector_num
@@ -36,6 +39,10 @@ def tr_bit_extract_subprocess(data, vector_num, filter_range,shift):
     proj_data = proj_data[0]
 
     bits = gen_bits(proj_data)
+
+    if not os.path.exists(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_results/{folder_name}"):
+        os.makedirs(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_results/{folder_name}")
+
     with open(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_results/{shift}.csv", "w") as f:
         for i in range(len(bits)):
             bit = bits[i]
@@ -143,7 +150,9 @@ if __name__ == "__main__":
 
     shift = args.shift
 
-    #tr_bit_extract_subprocess(data, vector_num, filter_range,shift)
+    folder_name = args.folder_name
+
+    tr_bit_extract_subprocess(data, vector_num, filter_range,shift,folder_name)
     
-    tr_bit_extract(data, vector_num, filter_range)
+    #tr_bit_extract(data, vector_num, filter_range)
 

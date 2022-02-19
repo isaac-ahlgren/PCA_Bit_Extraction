@@ -17,21 +17,24 @@ def compare_bits(bits1, bits2, bit_length):
             agreed += 1
     return (agreed/bit_length)*100
 
-def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, max_shift, filter_range, device):
+def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, max_shift, filter_range, device,folder_name):
     stats = np.zeros(max_shift)
-    host_samples = host_buffer[0:(vector_length*bit_length)]
-    host_bits = tr_bit_extract(host_samples, bit_length, filter_range)
+    # host_samples = host_buffer[0:(vector_length*bit_length)]
+    # host_bits = tr_bit_extract(host_samples, bit_length, filter_range)
 
     device_bits = []
     shift = 0
 
+    if not os.path.exists(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}"):
+        os.makedirs(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}")
+
     for shift in range(max_shift):
         
-        if not os.path.exists(f"./pickled_data/{device}_{shift}.npy"):
+        if not os.path.exists(f"./pickled_data/{folder_name}/{device}_{shift}.npy"):
             device_samples = device_buffer[shift:(shift + vector_length*bit_length)]
-            np.save(f"./pickled_data/{device}_{shift}", device_samples, allow_pickle=True)
+            np.save(f"./pickled_data/{folder_name}/{device}_{shift}", device_samples, allow_pickle=True)
 
-
+    return 
     
     running_processes = 0
     processes = []
@@ -39,12 +42,12 @@ def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, m
     shift = 0
     while shift < max_shift:
         if index == -1 and running_processes < MAX_PROCESSES:
-            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
+            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift} {folder_name}"]
             processes.append(subprocess.Popen(command, shell=True))
             running_processes+=1
             shift+=1
         elif index >= 0 and index < MAX_PROCESSES and running_processes < MAX_PROCESSES: 
-            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift}"]
+            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift} {folder_name}"]
             processes[index] = subprocess.Popen(command, shell=True)
             running_processes+=1
             shift+=1

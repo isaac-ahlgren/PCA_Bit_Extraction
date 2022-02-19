@@ -7,3 +7,5 @@ doyle_500khz_mllab_ds20.csv
 bit_results/
 pickled_data/
 misc/
+symbolic_cov*
+diff_*

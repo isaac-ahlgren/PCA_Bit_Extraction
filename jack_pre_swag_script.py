@@ -96,7 +96,6 @@ def parse_files(path):
     electric_data = {}
     audio_data = {}
 
-
     for root, dirs, files in os.walk(path,topdown=False):
         for fi in files:
             tmp_path = root+"/"+fi

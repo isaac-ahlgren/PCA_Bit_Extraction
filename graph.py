@@ -124,7 +124,9 @@ def graph(data, x_label, y_label, label_names):
 
 if __name__ == "__main__":
     # Parameters
-    file = "../electricity/doyle_500khz_2ndfloor_ds20.csv"
+    device = "device_2"
+    repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
+    file = repo_directory + "/data/electricity_data/new_doyle/doyle_500khz_2ndfloor_ds20.csv"
     channels = 3
     obs_vector_length = 2000
     bit_key_length = 64
@@ -140,8 +142,9 @@ if __name__ == "__main__":
             for i in range(1,channels+1):
                 buffers[i-1,j] = float(row[i])
   
-    stats = gen_shift_data(buffers[0], buffers, obs_vector_length, bit_key_length, max_shift, filter_range)
-    #stats = threaded_gen_shift_data(3, buffers[0], buffers, obs_vector_length, bit_key_length, max_shift, filter_range) 
-    label_names = ["Third Floor 1", "Third Floor 2", "ML Hallway"]
-    graph(stats, "Sample Shifts", "Bit Agreement",label_names)
+    subprocesses_gen_shift_data(repo_directory, buffers[0], buffers[2], obs_vector_length, bit_key_length, max_shift, filter_range, device)
+
+    #stats = gen_shift_data(buffers[0], buffers, obs_vector_length, bit_key_length, max_shift, filter_range) 
+    #label_names = ["Third Floor 1", "Third Floor 2", "ML Hallway"]
+    #graph(stats, "Sample Shifts", "Bit Agreement",label_names)
 

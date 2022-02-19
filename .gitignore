@@ -7,3 +7,4 @@ pickled_data/
 misc/
 symbolic_cov*
 diff_*
+matlab/*.asv

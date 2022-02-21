@@ -1,16 +1,27 @@
 
-function [B,A,V,T,U] = pca_sig(M,period_length)
-    T = seperate(M, period_length);
+function [B,A,V,T,U,F] = pca_sig(M,obs_vector_len,sig_period_len)
+    F = kyuin_filter(M, obs_vector_len, sig_period_len);    
+
+    T = seperate(F, obs_vector_len);
 
     V = abs(fft(T,length(T(1,:)),2));
-
-    %S = cov(V);
-    %S = (S + S')/2;
-
-    [U,Bopt] = l1pca(V',1);
-
-    A = U' * V';
     
+    S = cov(V);                                % covariance matrix of X
+    S = (S + S')/2;                            % resymmetrizing the matrix (needed cause matlab is shit)
+    
+    
+    [P,Q] = eig(S);                            % eigen value decomposition
+                                               % P = eigen vector matrix
+                                               % Q = diagonal eigen value
+                                               % matrix
+                 
+    U = P(:,end);                              % lower the dimension of P
+                
+    U = correct_orientation(U);                % correct the orientation of the eigen vector
+                 
+    A = U' * V';                               % project all vectors in V onto U
+                                               % this is the vector we use 
+                                               % for bit extraction
     B = bit_extract(A);
 end
 
@@ -41,6 +52,23 @@ function [B,A,V,T,U] = PCA(M, period_length)
                                                % this is the vector we use 
                                                % for bit extraction
     B = bit_extract(A);
+end
+
+function F = kyuin_filter(T, obs_vector_len, sig_period_len)
+    period_length = sig_period_len;
+    
+    for i = 1:period_length
+        index = i;
+        prev_value = T(index);
+        while (index+period_length <= length(T))
+                tmp = T(index+period_length);
+            T(index+period_length) = T(index+period_length) - prev_value;
+            prev_value = tmp;
+            index = index+period_length;
+        end
+    end
+    
+    F = T(obs_vector_len+1:end);
 end
 
 % Seperates a vector V into period_length sized row vectors

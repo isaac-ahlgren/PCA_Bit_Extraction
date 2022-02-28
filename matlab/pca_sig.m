@@ -2,6 +2,28 @@
 function [B,A,V,T,U,F] = pca_sig(M,obs_vector_len,sig_period_len)
     F = kyuin_filter(M, obs_vector_len, sig_period_len);    
 
+    T = seperate(M, obs_vector_len);
+
+    V = abs(fft(T,length(T(1,:)),2));
+                 
+    S = cov(V);
+    S = (S + S')/2;
+    
+    [P,Q] = eig(S);
+    
+    U = P(:,end);
+    
+    %U = correct_orientation(U);                % correct the orientation of the eigen vector
+                 
+    A = U' * V';                               % project all vectors in V onto U
+                                               % this is the vector we use 
+                                               % for bit extraction
+    B = bit_extract(A);
+end
+
+function [B,A,V,T,U,F] = l2_pca_sig(M,obs_vector_len,sig_period_len)
+    F = kyuin_filter(M, obs_vector_len, sig_period_len);    
+
     T = seperate(F, obs_vector_len);
 
     V = abs(fft(T,length(T(1,:)),2));

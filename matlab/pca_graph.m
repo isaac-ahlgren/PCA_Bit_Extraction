@@ -1,20 +1,19 @@
-file = "../data/electricity_data/new_doyle/doyle_500khz_2ndfloor_ds20.csv";
+file1 = "/home/ikey/repos/PCA_Bit_Extraction/data/audio/wav/near_room_ambient_track1.wav";
+file2 = "/home/ikey/repos/PCA_Bit_Extraction/data/audio/wav/near_room_ambient_track2.wav";
 period_length = 2000;
 obs_num = 64;
 host_num = 2;
-device_nums = [4];
-shift_amount = 250;
+device_nums = [1];
+shift_amount = 5000;
 
-M = readmatrix(file);
+%M = readmatrix(file);
+
+[audio1,Fs1] = audioread(file1);
+[audio2,Fs2] = audioread(file2);
+
+M = cat(2, audio1, audio2);
 
 bit_stats = generate_bits(M, period_length, obs_num, shift_amount, host_num, device_nums);
-
-function T = test(harm_num, amp, time_frame)
-    T = zeros(length(time_frame),1);
-    for i = 1:harm_num
-        T = T + amp/i*sin(120*i*pi*time_frame);
-    end
-end
 
 function bit_stats = generate_bits(data_matrix, period_length, obs_num, shift_amount, host_num, device_nums)
     bit_stats = zeros(length(device_nums),shift_amount);

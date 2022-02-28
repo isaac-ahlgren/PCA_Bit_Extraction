@@ -16,33 +16,14 @@ parser.add_argument("shift", help="This is not as imporant and will be used to g
 parser.add_argument("folder_name", help="This is not as imporant and will be used to give a file a name.")
 
 # Data is a numpy array
-def tr_bit_extract_subprocess(data, vector_num, filter_range,shift,folder_name):
-    data_matrix = np.array(np.split(data, vector_num))
-    
+def tr_bit_extract_subprocess(data, vector_num, filter_range, shift, folder_name, repo_directory):
+
     bits = tr_bit_extract(data, vector_num, filter_range)
 
-    fft_data_matrix = np.abs(np.fft.fft(data_matrix))
+    if not os.path.exists(f"{repo_directory}/bit_results/{folder_name}"):
+        os.makedirs(f"{repo_directory}/bit_results/{folder_name}")
 
-    filter(fft_data_matrix, filter_range, vlen)
-
-    cov_matrix = np.cov(fft_data_matrix.T)
-
-    output = la.ssyevx(cov_matrix, range='I', il=vlen, iu=vlen)
-
-    eig_vec = np.array(output[1])
-
-    eig_vec = fix_direction(eig_vec)
-
-    proj_data = (eig_vec.T).dot(data_matrix.T)
-
-    proj_data = proj_data[0]
-
-    bits = gen_bits(proj_data)
-
-    if not os.path.exists(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_results/{folder_name}"):
-        os.makedirs(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_results/{folder_name}")
-
-    with open(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_results/{shift}.csv", "w") as f:
+    with open(f"{repo_directory}/bit_results/{folder_name}/{shift}.csv", "w") as f:
         for i in range(len(bits)):
             bit = bits[i]
             if i < len(bits)-1:
@@ -53,14 +34,12 @@ def tr_bit_extract_subprocess(data, vector_num, filter_range,shift,folder_name):
 # Data is a numpy array
 def tr_bit_extract(data, vector_num, filter_range):
     data_matrix = np.array(np.split(data, vector_num))
-    
-    vlen = len(data) // vector_num
-    
-    fft_data_matrix = np.abs(np.fft.fft(data_matrix))
-        
-    normalize(fft_data_matrix)
 
-#    plot_fft(fft_data_matrix, fft_data_matrix.shape[0], 1/vlen)
+    vlen = len(data) // vector_num
+
+    fft_data_matrix = np.abs(np.fft.fft(data_matrix))
+
+    #filter(fft_data_matrix, filter_range, vlen)
 
     cov_matrix = np.cov(fft_data_matrix.T)
 
@@ -68,17 +47,15 @@ def tr_bit_extract(data, vector_num, filter_range):
 
     eig_vec = np.array(output[1])
 
-#    plot_1d_array(eig_vec.T, eig_vec.T.shape[1])
+    #eig_vec = fix_direction(eig_vec)
 
-    eig_vec = fix_direction(eig_vec)
-
-    proj_data = (eig_vec.T).dot(fft_data_matrix.T)
-
-#    plot_1d_array(proj_data, proj_data[0].shape[0])
+    proj_data = (eig_vec.T).dot(data_matrix.T)
 
     proj_data = proj_data[0]
 
-    return gen_bits(proj_data)
+    bits = gen_bits(proj_data)
+
+    return bits
 
 def filter(data, filter_range, vlen):
     for i in range(filter_range):
@@ -130,15 +107,20 @@ if __name__ == "__main__":
     data = args.data
     data = np.load(data)
 
-    vector_num = int(args.vector_num)
+    vector_num = 64
 
-    filter_range = int(args.filter_range)
+    filter_range = 0
 
     shift = args.shift
 
     folder_name = args.folder_name
 
-    tr_bit_extract_subprocess(data, vector_num, filter_range,shift,folder_name)
-    
-    #tr_bit_extract(data, vector_num, filter_range)
+  #  data = np.load("/home/ikey/repos/PCA_Bit_Extraction/pickled_data/near_room_ambient/near_room_ambient_track1_0.npy")
+  #  data = data.astype(float) / 32767
 
+  #  vector_num = 64
+
+  #  filter_range = 0
+
+  #  tr_bit_extract(data, vector_num, filter_range)
+    tr_bit_extract_subprocess(data, vector_num, filter_range, shift, folder_name, repo_directory)

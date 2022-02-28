@@ -1,5 +1,6 @@
 from bit_extract import tr_bit_extract
 import numpy as np
+from scipy.io import wavfile
 import matplotlib.pyplot as plt
 from  multiprocessing import Process, Array, Manager
 from multiprocessing.pool import Pool
@@ -8,33 +9,17 @@ import os
 
 import csv
 
-MAX_PROCESSES = 25
+MAX_PROCESSES = 20
 
-def compare_bits(bits1, bits2, bit_length):
-    agreed = 0
-    for i in range(bit_length):
-        if bits1[i] == bits2[i]:
-            agreed += 1
-    return (agreed/bit_length)*100
+def subprocesses_gen_shift_data(device_buffer, vector_length, bit_length, max_shift, filter_range, device,folder_name,repo_directory):
 
-def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, max_shift, filter_range, device,folder_name):
-    stats = np.zeros(max_shift)
-    # host_samples = host_buffer[0:(vector_length*bit_length)]
-    # host_bits = tr_bit_extract(host_samples, bit_length, filter_range)
+    if not os.path.exists(f"{repo_directory}/pickled_data/{folder_name}"):
+        os.makedirs(f"{repo_directory}/pickled_data/{folder_name}")
 
-    device_bits = []
-    shift = 0
-
-    if not os.path.exists(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}"):
-        os.makedirs(f"/home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}")
-
-    for shift in range(max_shift):
-        
-        if not os.path.exists(f"./pickled_data/{folder_name}/{device}_{shift}.npy"):
+    for shift in range(max_shift): 
+        if not os.path.exists(f"{repo_directory}/pickled_data/{folder_name}/{device}_{shift}.npy"):
             device_samples = device_buffer[shift:(shift + vector_length*bit_length)]
-            np.save(f"./pickled_data/{folder_name}/{device}_{shift}", device_samples, allow_pickle=True)
-
-    return 
+            np.save(f"{repo_directory}/pickled_data/{folder_name}/{device}_{shift}", device_samples, allow_pickle=True)
     
     running_processes = 0
     processes = []
@@ -42,12 +27,12 @@ def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, m
     shift = 0
     while shift < max_shift:
         if index == -1 and running_processes < MAX_PROCESSES:
-            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift} {folder_name}"]
+            command = [f"python3 {repo_directory}/python/bit_extract.py {repo_directory} {repo_directory}/pickled_data/{folder_name}/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift} {folder_name}"]
             processes.append(subprocess.Popen(command, shell=True))
             running_processes+=1
             shift+=1
         elif index >= 0 and index < MAX_PROCESSES and running_processes < MAX_PROCESSES: 
-            command = [f"python3 /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/bit_extract.py /home/jweezy/Drive2/Drive2/Code/UC-Code/PCA_Bit_Extraction/pickled_data/{folder_name}/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift} {folder_name}"]
+            command = [f"python3 {repo_directory}/python/bit_extract.py {repo_directory} {repo_directory}/pickled_data/{folder_name}/{device}_{shift}.npy {bit_length} {filter_range} {device}_{shift} {folder_name}"]
             processes[index] = subprocess.Popen(command, shell=True)
             running_processes+=1
             shift+=1
@@ -60,16 +45,6 @@ def gen_shift_data_jack(host_buffer, device_buffer, vector_length, bit_length, m
                     print(f"PID {processes[i].pid} finished.")
                     break
 
-
-
-
-
-    
-    #agreement_rate = compare_bits(host_bits, device_bits, bit_length)
-    #stats[shift] = agreement_rate
-
-
-
 def gen_shift_data(host_buffer, device_buffer, vector_length, bit_length, max_shift, filter_range):
     stats = np.zeros(max_shift)
     host_samples = host_buffer[0:(vector_length*bit_length)]
@@ -81,36 +56,6 @@ def gen_shift_data(host_buffer, device_buffer, vector_length, bit_length, max_sh
         agreement_rate = compare_bits(host_bits, device_bits, bit_length)
         stats[shift] = agreement_rate
 
-def thread_gen_shift_data(host_buffer, device_buffer, device_num,  vector_length, bit_length, max_shift, filter_range, stats):
-    
-    for shift in range(max_shift):
-        host_samples = host_buffer[0:(vector_length*bit_length)]
-        device_samples = device_buffer[shift:(shift + vector_length*bit_length)]
-        print("device " + str(device_num) + ": " + str(shift))
-        host_bits = tr_bit_extract(host_samples, bit_length, filter_range)
-        device_bits = tr_bit_extract(device_samples, bit_length, filter_range)
-        agreement_rate = compare_bits(host_bits, device_bits, bit_length)
-        stats[device_num*max_shift + shift] = agreement_rate
-
-def threaded_gen_shift_data(threads, host_buffer, device_buffers, vector_length, bit_length, max_shift, filter_range):
-    shared_mem = Array("d", len(device_buffers)*max_shift)
-    thread_list = list()
-    for i in range(threads):
-        thread_list.append(Process(target=thread_gen_shift_data, args=(host_buffer,device_buffers[i],i,vector_length,bit_length,max_shift,filter_range, shared_mem,)))
-
-    for j in range(threads):
-        thread_list[j].start()
-
-    for k in range(threads):
-        thread_list[k].join()
-
-    stats = np.zeros((len(device_buffers), max_shift))
-
-    for i in range(len(device_buffers)):
-        stats[i,:] = shared_mem[i*max_shift:(i+1)*max_shift]
-
-    return stats
-
 def graph(data, x_label, y_label, label_names):
     x = range(len(data[0,:]))
     data_plots = len(data[:,0])
@@ -120,31 +65,81 @@ def graph(data, x_label, y_label, label_names):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.show()
-        
+
+def get_audio(directory, name):
+    sr, data = wavfile.read(directory + "/" + name)
+    normal_data = data.astype(float) / 32767
+    return normal_data
+
+def get_comparison_stats(bit_host_base, host_bit_directory, bit_other_base, other_bit_directory, bit_len, shift_len):
+    stats = np.zeros(shift_len)    
+
+    host_file = host_bit_directory + "/" + bit_host_base + "_0.csv"
+    host_bits = np.zeros(bit_len)
+    with open(host_file, newline='') as host:
+        reader = csv.reader(host, delimiter=',', quotechar='|')
+        buf = next(reader)
+        for i in range(len(buf)):
+            host_bits[i] = float(buf[i])
+
+    for i in range(shift_len):
+        dev_file = other_bit_directory + "/" + bit_other_base + "_" + str(i) + ".csv"
+        with open(dev_file, newline='') as dev:
+            bits = np.zeros(bit_len)
+            reader = csv.reader(dev, delimiter=',', quotechar='|')
+            buf = next(reader)
+            print(buf)
+            for j in range(len(buf)):
+                bits[j] = float(buf[j])
+            stats[i] = compare_bits(host_bits, bits, bit_len)
+
+    return stats
+
+def compare_bits(bits1, bits2, bit_length):
+    agreed = 0
+    for i in range(bit_length):
+        if bits1[i] == bits2[i]:
+            agreed += 1
+    return (agreed/bit_length)*100
 
 if __name__ == "__main__":
     # Parameters
-    device = "device_2"
     repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
-    file = repo_directory + "/data/electricity_data/new_doyle/doyle_500khz_2ndfloor_ds20.csv"
     channels = 3
     obs_vector_length = 2000
     bit_key_length = 64
     max_shift = 5000
-    filter_range = 100
+    filter_range = 0
 
-    sample_len = 200000
-    buffers = np.zeros((channels,sample_len))
-    with open(file, newline='') as csvfile:
-        reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-        for j in range(sample_len):
-            row = next(reader)
-            for i in range(1,channels+1):
-                buffers[i-1,j] = float(row[i])
-  
-    subprocesses_gen_shift_data(repo_directory, buffers[0], buffers[2], obs_vector_length, bit_key_length, max_shift, filter_range, device)
+    base_names = ["near_room_ambient", "near_music", "near_fire_ambient", "medium_room_ambient", "medium_music", "medium_fire_ambient", "far_room_ambient", "far_music", "far_fire_ambient"]
 
-    #stats = gen_shift_data(buffers[0], buffers, obs_vector_length, bit_key_length, max_shift, filter_range) 
-    #label_names = ["Third Floor 1", "Third Floor 2", "ML Hallway"]
-    #graph(stats, "Sample Shifts", "Bit Agreement",label_names)
+    data_directory = repo_directory + "/data/audio/wav/"
+    for i in range(len(base_names)):
+        track1_name = base_names[i] + "_track1.wav"
+        track2_name = base_names[i] + "_track2.wav"
+        track1 = get_audio(data_directory, track1_name)
+        track2 = get_audio(data_directory, track2_name)
+        subprocesses_gen_shift_data(track1, obs_vector_length, bit_key_length, max_shift, filter_range, base_names[i] + "_track1", base_names[i], repo_directory)
+        subprocesses_gen_shift_data(track2, obs_vector_length, bit_key_length, max_shift, filter_range, base_names[i] + "_track2", base_names[i], repo_directory)
 
+
+    #sample_len = 200000
+    #buffers = np.zeros((channels,sample_len))
+    #with open(file, newline='') as csvfile:
+    #    reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+    #    for j in range(sample_len):
+    #        row = next(reader)
+    #        for i in range(1,channels+1):
+    #            buffers[i-1,j] = float(row[i])
+   
+    stat_names = ["near_room_ambient", "medium_room_ambient", "far_room_ambient"] 
+    comp_stats = np.zeros((len(stat_names),max_shift))
+    for i in range(len(stat_names)):
+        host_bit_directory = repo_directory + "/bit_results/" + stat_names[i]
+        bit_host_base = stat_names[i] + "_track2"
+        bit_other_base = stat_names[i] + "_track1"
+        comp_stats[i,:] = get_comparison_stats(bit_host_base, host_bit_directory, bit_other_base, host_bit_directory, bit_key_length, max_shift)
+    
+    graph(comp_stats, "Sample Shift", "Bit Agreement", stat_names)
+    
+    

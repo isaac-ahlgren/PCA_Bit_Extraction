@@ -49,9 +49,7 @@ def tr_bit_extract(data, vector_num, filter_range):
 
     #eig_vec = fix_direction(eig_vec)
 
-    proj_data = (eig_vec.T).dot(data_matrix.T)
-
-    proj_data = proj_data[0]
+    proj_data = (eig_vec.T).dot(fft_data_matrix.T)[0]
 
     bits = gen_bits(proj_data)
 
@@ -114,13 +112,15 @@ if __name__ == "__main__":
     shift = args.shift
 
     folder_name = args.folder_name
+   # data1 = np.load("/home/ikey/repos/PCA_Bit_Extraction/pickled_data/near_room_ambient/near_room_ambient_track1_0.npy")
 
-  #  data = np.load("/home/ikey/repos/PCA_Bit_Extraction/pickled_data/near_room_ambient/near_room_ambient_track1_0.npy")
-  #  data = data.astype(float) / 32767
+   # data2 = np.load("/home/ikey/repos/PCA_Bit_Extraction/pickled_data/near_room_ambient/near_room_ambient_track2_0.npy")
 
-  #  vector_num = 64
+   # vector_num = 64
 
-  #  filter_range = 0
+   # filter_range = 0
 
-  #  tr_bit_extract(data, vector_num, filter_range)
+   # tr_bit_extract(data1, vector_num, filter_range)
+   # tr_bit_extract(data2, vector_num, filter_range)
+
     tr_bit_extract_subprocess(data, vector_num, filter_range, shift, folder_name, repo_directory)

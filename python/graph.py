@@ -9,7 +9,7 @@ import os
 
 import csv
 
-MAX_PROCESSES = 20
+MAX_PROCESSES = 7
 
 def subprocesses_gen_shift_data(device_buffer, vector_length, bit_length, max_shift, filter_range, device,folder_name,repo_directory):
 
@@ -59,16 +59,23 @@ def gen_shift_data(host_buffer, device_buffer, vector_length, bit_length, max_sh
 def graph(data, x_label, y_label, label_names):
     x = range(len(data[0,:]))
     data_plots = len(data[:,0])
+    colors = ['#659DF6','#FF9300','#B4B4B4',"#666666"]
     for i in range(data_plots):
-        plt.plot(x, data[i], label=label_names[i])
+        plt.plot(x, data[i], color=colors[i], linewidth=0.7, label=label_names[i],)
+    plt.rcParams["font.family"] = "serif"
     plt.legend()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    plt.rcParams.update({'font.size': 16})
+    plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='minor',axis="y")
+    plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='major',axis="y")
+    plt.minorticks_on()
+    plt.savefig('em_exp.pdf') 
     plt.show()
 
 def get_audio(directory, name):
     sr, data = wavfile.read(directory + "/" + name)
-    normal_data = data.astype(float) / 32767
+    normal_data = data
     return normal_data
 
 def get_comparison_stats(bit_host_base, host_bit_directory, bit_other_base, other_bit_directory, bit_len, shift_len):
@@ -105,13 +112,27 @@ def compare_bits(bits1, bits2, bit_length):
 if __name__ == "__main__":
     # Parameters
     repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
-    channels = 3
+    channels = 4
     obs_vector_length = 2000
     bit_key_length = 64
     max_shift = 5000
-    filter_range = 0
+    filter_range = 5
 
-    base_names = ["near_room_ambient", "near_music", "near_fire_ambient", "medium_room_ambient", "medium_music", "medium_fire_ambient", "far_room_ambient", "far_music", "far_fire_ambient"]
+    base_names = ["near_music", "medium_music", "far_music"]
+
+    #file = repo_directory + "/data/electromagnetic_data/em_experiment.csv"
+    #sample_len = 150000
+    #buffers = np.zeros((channels,sample_len))
+    #with open(file, newline='') as csvfile:
+    #    reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+    #    for j in range(sample_len):
+    #        row = next(reader)
+    #        for i in range(1,channels+1):
+    #            buffers[i-1,j] = float(row[i])
+
+    #device_names = ["55_cm", "50_cm", "35_cm", "25_cm"]
+    #for i in range(channels):
+    #    subprocesses_gen_shift_data(buffers[i,:], obs_vector_length, bit_key_length, max_shift, filter_range, device_names[i], device_names[i], repo_directory)
 
     data_directory = repo_directory + "/data/audio/wav/"
     for i in range(len(base_names)):
@@ -122,24 +143,21 @@ if __name__ == "__main__":
         subprocesses_gen_shift_data(track1, obs_vector_length, bit_key_length, max_shift, filter_range, base_names[i] + "_track1", base_names[i], repo_directory)
         subprocesses_gen_shift_data(track2, obs_vector_length, bit_key_length, max_shift, filter_range, base_names[i] + "_track2", base_names[i], repo_directory)
 
-
-    #sample_len = 200000
-    #buffers = np.zeros((channels,sample_len))
-    #with open(file, newline='') as csvfile:
-    #    reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-    #    for j in range(sample_len):
-    #        row = next(reader)
-    #        for i in range(1,channels+1):
-    #            buffers[i-1,j] = float(row[i])
-   
-    stat_names = ["near_room_ambient", "medium_room_ambient", "far_room_ambient"] 
+    stat_names = ["near_music", "medium_music", "far_music"] 
     comp_stats = np.zeros((len(stat_names),max_shift))
     for i in range(len(stat_names)):
         host_bit_directory = repo_directory + "/bit_results/" + stat_names[i]
         bit_host_base = stat_names[i] + "_track2"
         bit_other_base = stat_names[i] + "_track1"
         comp_stats[i,:] = get_comparison_stats(bit_host_base, host_bit_directory, bit_other_base, host_bit_directory, bit_key_length, max_shift)
-    
-    graph(comp_stats, "Sample Shift", "Bit Agreement", stat_names)
+
+    #label_names = ["55cm host and 50cm device", "55cm host and 35cm device", "35cm host and 25cm device"]
+    #comp_stats = np.zeros((len(label_names),max_shift))
+
+    #comp_stats[0,:] = get_comparison_stats("55_cm", repo_directory + "/bit_results/55_cm", "50_cm", repo_directory + "/bit_results/50_cm", bit_key_length, max_shift)
+    #comp_stats[1,:] = get_comparison_stats("55_cm", repo_directory + "/bit_results/55_cm", "35_cm", repo_directory + "/bit_results/35_cm", bit_key_length, max_shift)
+    #comp_stats[2,:] = get_comparison_stats("35_cm", repo_directory + "/bit_results/35_cm", "25_cm", repo_directory + "/bit_results/25_cm", bit_key_length, max_shift)
+
+    graph(comp_stats, "Time Sample Shift", "Bit Agreement(%)", stat_names)
     
     

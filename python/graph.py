@@ -56,7 +56,7 @@ def gen_shift_data(host_buffer, device_buffer, vector_length, bit_length, max_sh
         agreement_rate = compare_bits(host_bits, device_bits, bit_length)
         stats[shift] = agreement_rate
 
-def graph(data, x_label, y_label, label_names):
+def graph(data, x_label, y_label, pdf_name, label_names):
     x = range(len(data[0,:]))
     data_plots = len(data[:,0])
     colors = ['#659DF6','#FF9300','#B4B4B4',"#666666"]
@@ -70,12 +70,12 @@ def graph(data, x_label, y_label, label_names):
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='minor',axis="y")
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='major',axis="y")
     plt.minorticks_on()
-    plt.savefig('em_exp.pdf') 
+    plt.savefig(pdf_name + '.pdf') 
     plt.show()
 
 def get_audio(directory, name):
     sr, data = wavfile.read(directory + "/" + name)
-    normal_data = data
+    normal_data = data / 32767
     return normal_data
 
 def get_comparison_stats(bit_host_base, host_bit_directory, bit_other_base, other_bit_directory, bit_len, shift_len):

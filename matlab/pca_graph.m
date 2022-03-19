@@ -6,8 +6,6 @@ host_num = 2;
 device_nums = [1];
 shift_amount = 5000;
 
-%M = readmatrix(file);
-
 [audio1,Fs1] = audioread(file1);
 [audio2,Fs2] = audioread(file2);
 
@@ -28,7 +26,7 @@ function bit_stats = generate_bits(data_matrix, period_length, obs_num, shift_am
          for shift = 1:shift_amount
              buf = get_window(device_buffer, shift, period_length*obs_num);
              [device_bits,dev_A,dev_V,dev_T,dev_U,dev_F] = pca_sig(buf,period_length,device_sig_period_length);
-             percent = compare_bits(device_bits,host_bits);
+             percent = compare_bits(device_bits, host_bits);
              bit_stats(i,shift) = percent;
          end
     end

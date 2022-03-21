@@ -2,6 +2,7 @@ import numpy as np
 from graph import get_audio
 from graph import graph
 from bit_extract import tr_bit_extract
+import ctypes
 
 def euclid_dist(x,y):
     total = 0
@@ -48,35 +49,68 @@ def levenshtein_dist(token1, token2):
 
     return distances[len(token1)][len(token2)]
 
-def gen_dist(buf1, buf2, obs_vector_len, max_shift):
-    dist_time = np.zeros((3,max_shift))
-    dist_fft = np.zeros((3,max_shift))
+def gen_euclid_dist_shift(x, y, sample_len, max_shift):
+    res = np.zeros(max_shift)
     for shift in range(max_shift):
-        dev_samples1 = buf1[0:obs_vector_len]
-        dev_samples2 = buf2[shift:(shift + obs_vector_len)]
-        dist_time[0,shift] = euclid_dist(dev_samples1,dev_samples2)
-        dist_fft[0,shift] = euclid_dist(np.abs(np.fft.fft(dev_samples1)), np.abs(np.fft.fft(dev_samples2)))
-        dist_time[1,shift] = cosine_dist(dev_samples1,dev_samples2)
-        dist_fft[1,shift] = cosine_dist(np.abs(np.fft.fft(dev_samples1)), np.abs(np.fft.fft(dev_samples2)))
-        dist_time[2,shift] = levenshtein_dist(dev_samples1,dev_samples2)
-        dist_fft[2,shift] = levenshtein_dist(np.abs(np.fft.fft(dev_samples1)), np.abs(np.fft.fft(dev_samples2)))
-
-    return dist_fft, dist_time
+        buf1 = x[0:sample_len]
+        buf2 = y[shift:(shift + sample_len)]
+        res[shift] = euclid_dist(buf1, buf2)
+    return res
 
 if __name__ == "__main__":
-   repo_directory = ".."
+   so_file = "./distance_calc.so"
+   lib = ctypes.cdll.LoadLibrary("./distance_calc.so")
+   euclid_dist_c = lib.euclid_dist_shift
+   euclid_dist_c.restype = None
+   euclid_dist_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                             np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                             ctypes.c_int,
+                             ctypes.c_int,
+                             np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS")]
+
+   repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
    obs_vector_length = 2000
    max_shift = 5000
-   data_directory = repo_directory + "/data/wav"
-   base_names = ["near_music", "far_music"]
-   distance_labels = ["Euclidian Distance", "Cosine Distance", "Levenshtein Distance"]
+   data_directory = repo_directory + "/data/audio/wav"
+
+   base_names = ["near_music", "medium_music", "far_music"]
+   labels = ["Near Music", "Medium Music", "Far Music"]
+   results = np.zeros((3, max_shift))
    for i in range(len(base_names)):
        track1_name = base_names[i] + "_track1.wav"
        track2_name = base_names[i] + "_track2.wav"
        track1 = get_audio(data_directory, track1_name)
        track2 = get_audio(data_directory, track2_name)
-       dist_fft, dist_time = gen_dist(track1, track2, obs_vector_length, max_shift)
-       graph(dist_time, "Time Sample Shifts", "Distance", base_names[i], distance_labels)
-       graph(dist_fft, "Time Sample Shifts", "Distance", base_names[i], distance_labels)
+       res = np.zeros(max_shift)
+       euclid_dist_c(track1, track2, obs_vector_length, max_shift, res)
+       results[i,:] = res
 
+   graph(results, "Time Sample Shifts", "Euclidian Distance", "euclidan_dist_music", labels)
 
+   base_names = ["near_fire_ambient", "medium_fire_ambient", "far_fire_ambient"]
+   labels = ["Near Fire Ambience", "Medium Fire Ambience", "Far Fire Ambience"]
+   results = np.zeros((3, max_shift))
+   for i in range(len(base_names)):
+       track1_name = base_names[i] + "_track1.wav"
+       track2_name = base_names[i] + "_track2.wav"
+       track1 = get_audio(data_directory, track1_name)
+       track2 = get_audio(data_directory, track2_name)
+       res = np.zeros(max_shift)
+       euclid_dist_c(track1, track2, obs_vector_length, max_shift, res)
+       results[i,:] = res
+
+   graph(results, "Time Sample Shifts", "Euclidian Distance", "euclidan_dist_fire_ambience", labels)
+
+   base_names = ["near_room_ambient", "medium_room_ambient", "far_room_ambient"]
+   labels = ["Near Room Ambience", "Medium Room Ambience", "Far Room Ambience"]
+   results = np.zeros((3, max_shift))
+   for i in range(len(base_names)):
+       track1_name = base_names[i] + "_track1.wav"
+       track2_name = base_names[i] + "_track2.wav"
+       track1 = get_audio(data_directory, track1_name)
+       track2 = get_audio(data_directory, track2_name)
+       res = np.zeros(max_shift)
+       euclid_dist_c(track1, track2, obs_vector_length, max_shift, res)
+       results[i,:] = res
+
+   graph(results, "Time Sample Shifts", "Euclidian Distance", "euclidan_dist_room_ambience", labels)

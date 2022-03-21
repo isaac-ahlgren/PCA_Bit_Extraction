@@ -8,3 +8,5 @@ misc/
 symbolic_cov*
 diff_*
 matlab/*.asv
+python/__pycache__/
+python/distanc_calc.so

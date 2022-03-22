@@ -3,10 +3,10 @@
 
 #include "distance.h"
 
-typedef void (*Preprocess_Func)(double*, int, double*, int);
-typedef double (*Dist_Func)(double*, double*, int);
+typedef float (*Dist_Func)(float*, float*, int);
 
-void threaded_dist_calc(Dist_Func dist_func, Preprocess_Func pre_func, int preproc_output, double* buf1, double* buf2, int input_len, int max_shift, int thread_num, double* result);
+void threaded_dist_calc(Dist_Func dist_func, float* buf1, float* buf2, int input_len, int max_shift, int thread_num, float* result);
+void threaded_dist_calc_fft(Dist_Func dist_func, float* buf1, float* buf2, int input_len, int max_shift, int thread_num, float* result);
 
 #endif
 

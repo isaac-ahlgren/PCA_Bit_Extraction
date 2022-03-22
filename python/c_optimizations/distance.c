@@ -1,9 +1,9 @@
 #include <math.h>
 #include <stdlib.h>
 
-double euclid_dist(double* x, double* y, int length)
+float euclid_dist(float* x, float* y, int length)
 {
-    double total = 0;
+    float total = 0;
     for (int i = 0; i < length; i++) {
         total += pow(x[i] - y[i], 2);
     }
@@ -11,9 +11,9 @@ double euclid_dist(double* x, double* y, int length)
     return sqrt(total);
 }
 
-double cosine_dist(double* x, double* y, int length)
+float cosine_dist(float* x, float* y, int length)
 {
-    double total = 0;
+    float total = 0;
     for (int i = 0; i < length; i++) {
         total += x[i]*y[i];
     }
@@ -21,9 +21,9 @@ double cosine_dist(double* x, double* y, int length)
     return total;
 }
 
-int levenshtein_dist(double* x, double* y, int length)
+int levenshtein_dist(float* x, float* y, int length)
 {
-    double* distances = malloc(sizeof(double)*(length+1)*(length+1));
+    float* distances = malloc(sizeof(float)*(length+1)*(length+1));
 
     for (int i = 0; i < length + 1; i++) {
         distances[i] = i;

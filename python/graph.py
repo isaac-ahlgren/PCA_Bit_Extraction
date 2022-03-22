@@ -76,7 +76,7 @@ def graph(data, x_label, y_label, pdf_name, label_names):
 def get_audio(directory, name):
     sr, data = wavfile.read(directory + "/" + name)
     normal_data = data / 32767
-    return np.array(normal_data)
+    return np.array(normal_data, dtype=np.float32)
 
 def get_comparison_stats(bit_host_base, host_bit_directory, bit_other_base, other_bit_directory, bit_len, shift_len):
     stats = np.zeros(shift_len)    

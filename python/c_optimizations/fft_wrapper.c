@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include "fft_wrapper.h"
 
 struct fft_args* alloc_fft_args(int input_size) 

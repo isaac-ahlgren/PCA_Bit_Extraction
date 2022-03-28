@@ -3,6 +3,7 @@ from graph import get_audio
 from graph import graph
 from bit_extract import tr_bit_extract
 import ctypes
+import matplotlib.pyplot as plt
 
 def euclid_dist(x,y):
     total = 0
@@ -116,10 +117,30 @@ if __name__ == "__main__":
                                      ctypes.c_int,
                                      np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
 
+   test_fft = lib.test
+   test_fft.restpye = None
+   test_fft.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                   np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                   ctypes.c_int]
+
+
    repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
    obs_vector_length = 2048
    max_shift = 5000
    data_directory = repo_directory + "/data/audio/wav"
+
+   track1 = get_audio(data_directory, "near_music_track1.wav")
+   res = np.zeros(obs_vector_length, dtype=np.float32)
+
+   py_fft = np.abs(np.fft.fft(track1[0:obs_vector_length]))
+   test_fft(np.array(track1[0:obs_vector_length], dtype=np.float32), res, obs_vector_length)
+
+   plt.plot(py_fft)
+   plt.show()
+   plt.plot(res)
+   plt.show()
+
+   exit()
 
    base_names = ["near_music", "medium_music", "far_music"]
    labels = ["Near Music", "Medium Music", "Far Music"]

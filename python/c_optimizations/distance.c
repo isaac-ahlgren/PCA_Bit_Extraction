@@ -1,7 +1,6 @@
-#include <math.h>
-#include <stdlib.h>
+#include "distance.h"
 
-float euclid_dist(float* x, float* y, int length)
+float euclid_dist(float* x, float* y, uint32_t length)
 {
     float total = 0;
     for (int i = 0; i < length; i++) {
@@ -11,7 +10,7 @@ float euclid_dist(float* x, float* y, int length)
     return sqrt(total);
 }
 
-float cosine_dist(float* x, float* y, int length)
+float cosine_dist(float* x, float* y, uint32_t length)
 {
     float total = 0;
     for (int i = 0; i < length; i++) {
@@ -21,7 +20,7 @@ float cosine_dist(float* x, float* y, int length)
     return total;
 }
 
-int levenshtein_dist(float* x, float* y, int length)
+int levenshtein_dist(float* x, float* y, uint32_t length)
 {
     float* distances = malloc(sizeof(float)*(length+1)*(length+1));
 

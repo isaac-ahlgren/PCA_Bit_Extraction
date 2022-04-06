@@ -1,11 +1,9 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-//#include "pca_wrapper.h"
-#include "eig_sym.h"
+#include "pca_wrapper.h"
+#include "f2c.h"
+#include "clapack.h"
 #include "fft_wrapper.h"
 
-float mean(float* vector, int vec_len, int vec_num)
+float mean(float* vector, uint32_t vec_len, uint32_t vec_num)
 {
     float sum = 0;
     for (int i = 0; i < vec_num; i++)
@@ -16,7 +14,7 @@ float mean(float* vector, int vec_len, int vec_num)
     return sum / vec_num;
 }
 
-void calc_means(float* A, float* means, int vec_len, int vec_num)
+void calc_means(float* A, float* means, uint32_t vec_len, uint32_t vec_num)
 {
     for (int i = 0; i < vec_len; i++)
     {
@@ -25,7 +23,7 @@ void calc_means(float* A, float* means, int vec_len, int vec_num)
     }
 }   
         
-void cov(float* A, float* cov_mat, float* means, int vec_len, int vec_num)
+void cov(float* A, float* cov_mat, float* means, uint32_t vec_len, uint32_t vec_num)
 {
     
     calc_means(A, means, vec_len, vec_num);
@@ -56,40 +54,55 @@ void print_matrix(float* mat, int columns, int rows) {
     printf("\n");
 }
 
-struct fft_pca_args { 
-    struct fft_args* f_args;
-    int vec_len;
-    int vec_num;
-    float* cov_mat;
-    float* cov_mat_means;
-    float* eig_vals;
-    float* princ_comp;
-};
-
-struct fft_pca_args* alloc_fft_pca_args(int input_size, int vec_len, int vec_num)
+struct fft_pca_args* alloc_fft_pca_args(uint32_t vec_len, uint32_t vec_num)
 {
     struct fft_pca_args* args = malloc(sizeof(struct fft_pca_args));
     
     args->f_args = alloc_fft_args(vec_len);
     args->vec_len = vec_len;
     args->vec_num = vec_num;
+    args->fft_buf = malloc(sizeof(float)*(vec_len/2 + 1)*vec_num);
     args->cov_mat = malloc(sizeof(float)*vec_len*vec_len);
     args->cov_mat_means = malloc(sizeof(float)*vec_len);
-    args->eig_vals = malloc(sizeof(float)*vec_len);
     args->princ_comp = malloc(sizeof(float)*vec_len);
+    args->iwork = malloc(sizeof(uint32_t)*vec_len*5);
+
+
+    integer n = vec_len, lda = vec_len, ldz = vec_len;
+
+    // Allocate correct amount of memory for work
+    integer lower_limit = vec_len;
+    integer upper_limit = vec_len;
+    integer eig_val_found = 0;
+    integer ifail = 0;
+    real work = 0;
+    integer info = 0;
+    real eig_val = 0;
+    real absol = 0.001;
+    integer lwork = -1;
+    ssyevx_("Vectors", "Indices", "Upper", (integer*) &n, (real*) args->cov_mat, (integer*) &lda, (real*) 0, (real*) 0, (integer*) &lower_limit, (integer*) &upper_limit,
+           (real*) &absol, (integer*) &eig_val_found, (real*) &eig_val, (real*) args->princ_comp, (integer*) &ldz, (real*) &work, (integer*) &lwork, (integer*) args->iwork,
+           (integer*) &ifail, (integer*) &info);
+    
+    args->lwork = 10000;
+    args->work = malloc(sizeof(float)*10000);
+
+    return args;
 }
 
 void free_fft_pca_args(struct fft_pca_args* args)
 {
     free_fft_args(args->f_args);
+    free(args->fft_buf);
     free(args->cov_mat);
     free(args->cov_mat_means);
-    free(args->eig_vals);
     free(args->princ_comp);
+    free(args->iwork);
+    free(args->work);
     free(args);
 }
 
-void fft_obs_matrix(float* buffer, int vec_len, int vec_num, struct fft_args* args)
+void fft_obs_matrix(float* input, float* output, uint32_t vec_len, uint32_t vec_num, struct fft_args* args)
 {
     for (int i = 0; i < vec_num; i++)
     {
@@ -99,28 +112,19 @@ void fft_obs_matrix(float* buffer, int vec_len, int vec_num, struct fft_args* ar
             condense the matrix without leaving any extra space because of
             how real ffts work.
         */ 
-        fft_abs((buffer + i*vec_len), (buffer + i*(vec_len/2 + 1)), args);
+        fft_abs((input + i*vec_len), (output + i*(vec_len/2 + 1)), args);
     } 
 }
 
-void find_princ_comp(float* conv_mat, float* eig_vals, float* princ_comp, int vec_len)
+void fix_output(float* output, uint32_t output_len)
 {
-
-    int max = -1;
-    for (int i = 0; i < vec_len; i++)
+    for (int i = 0; i < output_len; i++)
     {
-        if (max < 0 || eig_vals[max] > eig_vals[i]) {
-            max = i;
-        }
-    }
-
-    for (int i = 0; i < vec_len; i++)
-    {
-        princ_comp[i] = conv_mat[max + i*vec_len];
-    }
+        output[i] = (output[i] < 0) ? output[i]*-1 : output[i];
+    }  
 }
 
-void project_data(float* buffer, float* princ_comp, float* output, int vec_len, int vec_num)
+void project_data(float* buffer, float* princ_comp, float* output, uint32_t vec_len, uint32_t vec_num)
 {
     for (int i = 0; i < vec_num; i++)
     {
@@ -135,48 +139,47 @@ void project_data(float* buffer, float* princ_comp, float* output, int vec_len, 
 void fft_pca(float* input_buffer, float* output_buffer, void* args)
 {
     struct fft_pca_args* inputs = (struct fft_pca_args*) args;
+    float* fft_buf = inputs->fft_buf;
     float* cov_mat = inputs->cov_mat;
     float* cov_mat_means = inputs->cov_mat_means;
-    float* eig_vals = inputs->eig_vals;
     float* princ_comp = inputs->princ_comp;
-    int vec_len = inputs->vec_len;
-    int vec_num = inputs->vec_num;
+    float* work = inputs->work;
+    uint32_t* iwork = inputs->iwork;
+    uint32_t lwork = inputs->lwork;
+    uint32_t vec_len = inputs->vec_len;
+    uint32_t vec_num = inputs->vec_num;
 
-    print_matrix(input_buffer, vec_len, vec_num);
-    printf("\n");
-
-    fft_obs_matrix(input_buffer, vec_len, vec_num, inputs->f_args);
+    fft_obs_matrix(input_buffer, fft_buf,  vec_len, vec_num, inputs->f_args);
 
     vec_len = (vec_len/2 + 1); // since data is real, vectors after fft are length n/2 + 1 
-
-    print_matrix(input_buffer, vec_len, vec_num);
-    printf("\n");
     
-    cov(input_buffer, cov_mat, cov_mat_means, vec_len, vec_num);
+    cov(fft_buf, cov_mat, cov_mat_means, vec_len, vec_num);
 
-    print_matrix(cov_mat, vec_len, vec_len);
-    printf("\n");
+    integer n = vec_len, lda = vec_len, ldz = vec_len;
+    integer lower_limit = vec_len;
+    integer upper_limit = vec_len;
+    integer eig_val_found = 0;
+    integer ifail = 0;
+    integer info = 0;
+    real eig_val = 0;
+    real absol = 0.001;
+    ssyevx_("Vectors", "Indices", "Upper", (integer*) &n, (real*) cov_mat, (integer*) &lda, (real*) 0, (real*) 0, (integer*) &upper_limit, (integer*) &lower_limit,
+           (real*) &absol, (integer*) &eig_val_found, (real*) &eig_val, (real*) princ_comp, (integer*) &ldz, (real*) work, (integer*) &lwork, (integer*) iwork,
+           (integer*) &ifail, (integer*) &info);
 
-    eig_sym(cov_mat, vec_len, eig_vals);
+    project_data(fft_buf, princ_comp, output_buffer, vec_len, vec_num);
 
-    print_matrix(cov_mat, vec_len, vec_len);
-    printf("\n");
-
-    find_princ_comp(cov_mat, eig_vals, princ_comp, vec_len);
-
-    print_matrix(princ_comp, vec_len, 1);
-    printf("\n");
-
-    project_data(input_buffer, princ_comp, output_buffer, vec_len, vec_num);
-
-    print_matrix(output_buffer, vec_num, 1);
-    printf("\n");
+    fix_output(output_buffer, vec_num);
 }
 
+/*
 int main() {
     float data[] = {1, 2, 6, 4, 3, 9, 7, 0, 12, 4, 7, 23, 9, 2, 7 , 3, 1, 3, 7, 1, 2, 9, 2, 1, 4, 5, 3, 1, 8, 2, 1, 1};
     float output[] = {0, 0};
 
     struct fft_pca_args* args = alloc_fft_pca_args(32, 16, 2);
     fft_pca(data, output, (void*) args);
-}
+    free_fft_pca_args(args);
+    
+}  
+*/

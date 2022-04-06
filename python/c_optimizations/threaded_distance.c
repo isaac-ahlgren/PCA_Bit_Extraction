@@ -1,7 +1,7 @@
 #include <pthread.h>
-#include <stdlib.h>
 #include "threaded_distance.h"
 #include "fft_wrapper.h"
+#include "pca_wrapper.h"
 
 typedef void (*Preprocess_Func)(float*, float*, void*);
 
@@ -50,12 +50,12 @@ void* calc_dist(void* input)
     return 0;
 }
 
-void threaded_dist_calc(Dist_Func dist_func, float* buf1, float* buf2, int input_len, int max_shift, int thread_num, float* result)
+void threaded_dist_calc(Dist_Func dist_func, float* buf1, float* buf2, uint32_t input_len, uint32_t max_shift, uint32_t thread_num, float* result)
 {
     pthread_t* threads = malloc(sizeof(pthread_t)*thread_num);
     struct args* inputs = malloc(sizeof(struct args)*thread_num);
 
-    int shift_len = max_shift / thread_num;
+    uint32_t shift_len = max_shift / thread_num;
 
     for (int i = 0; i < thread_num; i++) {
         inputs[i].start_position = i*shift_len;
@@ -79,12 +79,12 @@ void threaded_dist_calc(Dist_Func dist_func, float* buf1, float* buf2, int input
     free(inputs);
 }
 
-void threaded_dist_calc_fft(Dist_Func dist_func, float* buf1, float* buf2, int input_len, int max_shift, int thread_num, float* result)
+void threaded_dist_calc_fft(Dist_Func dist_func, float* buf1, float* buf2, uint32_t input_len, uint32_t max_shift, uint32_t thread_num, float* result)
 {
     pthread_t* threads = malloc(sizeof(pthread_t)*thread_num);
     struct args* inputs = malloc(sizeof(struct args)*thread_num);
 
-    int shift_len = max_shift / thread_num;
+    uint32_t shift_len = max_shift / thread_num;
 
     for (int i = 0; i < thread_num; i++) {
         inputs[i].start_position = i*shift_len;
@@ -93,8 +93,8 @@ void threaded_dist_calc_fft(Dist_Func dist_func, float* buf1, float* buf2, int i
         inputs[i].preprocess_args = (void*) alloc_fft_args(input_len);
         inputs[i].buf1 = buf1;
         inputs[i].buf2 = buf2;
-        inputs[i].out_buf1 = malloc(sizeof(float)*input_len/2 + 1);
-        inputs[i].out_buf2 = malloc(sizeof(float)*input_len/2 + 1);
+        inputs[i].out_buf1 = malloc(sizeof(float)*(input_len/2 + 1));
+        inputs[i].out_buf2 = malloc(sizeof(float)*(input_len/2 + 1));
         inputs[i].preproc_output = input_len/2  + 1;
         inputs[i].input_len = input_len;
         inputs[i].results = result;
@@ -110,6 +110,41 @@ void threaded_dist_calc_fft(Dist_Func dist_func, float* buf1, float* buf2, int i
         free(inputs[i].out_buf2);
     }
     
+    free(threads);
+    free(inputs);
+}
+
+void threaded_dist_calc_pca(Dist_Func dist_func, float* buf1, float* buf2, uint32_t vec_len, uint32_t vec_num, uint32_t max_shift, uint32_t thread_num, float* result)
+{
+    pthread_t* threads = malloc(sizeof(pthread_t)*thread_num);
+    struct args* inputs = malloc(sizeof(struct args)*thread_num);
+
+    uint32_t shift_len = max_shift / thread_num;
+
+    for (int i = 0; i < thread_num; i++) {
+        inputs[i].start_position = i*shift_len;
+        inputs[i].dist_func = dist_func;
+        inputs[i].pre_func = &fft_pca;
+        inputs[i].preprocess_args = (void*) alloc_fft_pca_args(vec_len, vec_num);
+        inputs[i].buf1 = buf1;
+        inputs[i].buf2 = buf2;
+        inputs[i].out_buf1 = malloc(sizeof(float)*vec_num);
+        inputs[i].out_buf2 = malloc(sizeof(float)*vec_num);
+        inputs[i].preproc_output = vec_num;
+        inputs[i].input_len = vec_len*vec_num;
+        inputs[i].results = result;
+        inputs[i].shift_len = shift_len;
+
+        pthread_create(&threads[i], 0, calc_dist, (void*) &inputs[i]);
+    }
+
+    for (int i = 0; i < thread_num; i++) {
+        pthread_join(threads[i], 0);
+        free_fft_pca_args(inputs[i].preprocess_args);
+        free(inputs[i].out_buf1);
+        free(inputs[i].out_buf2);
+    }
+
     free(threads);
     free(inputs);
 }

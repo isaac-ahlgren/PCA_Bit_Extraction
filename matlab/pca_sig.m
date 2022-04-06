@@ -1,10 +1,12 @@
 
-function [B,A,V,T,U,F] = pca_sig(M,obs_vector_len,sig_period_len)
-    F = kyuin_filter(M, obs_vector_len, sig_period_len);    
+function [B,A,V,T,U] = pca_sig(M,obs_vector_len,sig_period_len)
+    %F = kyuin_filter(M, obs_vector_len, sig_period_len);    
 
     T = seperate(M, obs_vector_len);
 
     V = abs(fft(T,length(T(1,:)),2));
+    
+    V = V(:,1:(length(V)/2 + 1));
                  
     S = cov(V);
     S = (S + S')/2;

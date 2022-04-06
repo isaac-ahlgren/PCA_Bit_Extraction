@@ -1,9 +1,9 @@
-file1 = "/home/ikey/repos/PCA_Bit_Extraction/data/audio/wav/near_room_ambient_track1.wav";
-file2 = "/home/ikey/repos/PCA_Bit_Extraction/data/audio/wav/near_room_ambient_track2.wav";
-period_length = 2000;
+file1 = "/home/ikey/repos/PCA_Bit_Extraction/data/audio/wav/near_music_track1.wav";
+file2 = "/home/ikey/repos/PCA_Bit_Extraction/data/audio/wav/near_music_track2.wav";
+period_length = 2048;
 obs_num = 64;
-host_num = 2;
-device_nums = [1];
+host_num = 1;
+device_nums = [2];
 shift_amount = 5000;
 
 [audio1,Fs1] = audioread(file1);
@@ -17,7 +17,7 @@ function bit_stats = generate_bits(data_matrix, period_length, obs_num, shift_am
     bit_stats = zeros(length(device_nums),shift_amount);
     host_sig_period_length = 417;
     host_samples = get_window(data_matrix(:,host_num), 1, period_length*obs_num);
-    [host_bits,host_A,host_V,host_T,host_U,host_F] = pca_sig(host_samples,period_length,host_sig_period_length);
+    [host_bits,host_A,host_V,host_T,host_U] = pca_sig(host_samples,period_length,host_sig_period_length);
 
     for i = 1:length(device_nums)
          device_buffer = data_matrix(:,device_nums(i));
@@ -25,7 +25,7 @@ function bit_stats = generate_bits(data_matrix, period_length, obs_num, shift_am
          
          for shift = 1:shift_amount
              buf = get_window(device_buffer, shift, period_length*obs_num);
-             [device_bits,dev_A,dev_V,dev_T,dev_U,dev_F] = pca_sig(buf,period_length,device_sig_period_length);
+             [device_bits,dev_A,dev_V,dev_T,dev_U] = pca_sig(buf,period_length,device_sig_period_length);
              percent = compare_bits(device_bits, host_bits);
              bit_stats(i,shift) = percent;
          end

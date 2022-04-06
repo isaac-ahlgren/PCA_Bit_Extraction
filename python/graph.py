@@ -73,6 +73,7 @@ def graph(data, x_label, y_label, pdf_name, label_names):
     plt.minorticks_on()
     plt.savefig(pdf_name + '.pdf') 
     plt.show()
+    #plt.close()
 
 def get_audio(directory, name):
     sr, data = wavfile.read(directory + "/" + name)

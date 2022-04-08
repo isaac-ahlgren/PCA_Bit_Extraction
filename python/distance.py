@@ -1,6 +1,7 @@
 import numpy as np
 from graph import get_audio
 from graph import graph
+from graph import pickle_it
 from bit_extract import tr_bit_extract
 from bit_extract import gen_bits
 import ctypes
@@ -229,6 +230,9 @@ if __name__ == "__main__":
        track2 = get_audio(data_directory, track2_name)
 
        results_ep, results_cp = multiple_windows_pca(track1, track2, vec_num, 9, 13, max_shift)
+
+       pickle_it(graph_directory + "pickled/euclidian_" + base_names[i]  + "_pca", results_ep)
+       pickle_it(graph_directory + "pickled/cosine_" + base_names[i]  + "_pca", results_cp)
 
        graph(results_ep, "Time Sample Shifts", "Euclidean Distance", "Euclidian Distance Over Multiple Vector Sizes", graph_directory + "euclidian_" + base_names[i]  + "_pca", labels)
        graph(results_cp, "Time Sample Shifts", "Cosine Distance", "Cosine Distance Over Multiple Vector Sizes", graph_directory + "cosine_" + base_names[i] + "_pca", labels)

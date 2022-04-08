@@ -57,6 +57,10 @@ def gen_shift_data(host_buffer, device_buffer, vector_length, bit_length, max_sh
         agreement_rate = compare_bits(host_bits, device_bits, bit_length)
         stats[shift] = agreement_rate
 
+def pickle_it(filename, array):
+    if not os.path.exists(filename + "_pickled"):
+        np.save(filename + "_pickled.npy", array)
+
 def graph(data, x_label, y_label, title_name, pdf_name, label_names):
     x = range(len(data[0,:]))
     data_plots = len(data[:,0])
@@ -74,7 +78,7 @@ def graph(data, x_label, y_label, title_name, pdf_name, label_names):
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='major',axis="y")
     plt.minorticks_on()
     plt.savefig(pdf_name + '.pdf') 
-    plt.show()
+    #plt.show()
 
 def get_audio(directory, name):
     sr, data = wavfile.read(directory + "/" + name)

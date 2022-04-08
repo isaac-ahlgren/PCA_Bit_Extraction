@@ -6,6 +6,7 @@ from  multiprocessing import Process, Array, Manager
 from multiprocessing.pool import Pool
 import subprocess
 import os
+import time
 
 import csv
 
@@ -56,7 +57,7 @@ def gen_shift_data(host_buffer, device_buffer, vector_length, bit_length, max_sh
         agreement_rate = compare_bits(host_bits, device_bits, bit_length)
         stats[shift] = agreement_rate
 
-def graph(data, x_label, y_label, pdf_name, label_names):
+def graph(data, x_label, y_label, title_name, pdf_name, label_names):
     x = range(len(data[0,:]))
     data_plots = len(data[:,0])
     colors = ['#659DF6','#FF9300','#B4B4B4',"#666666"]
@@ -66,6 +67,7 @@ def graph(data, x_label, y_label, pdf_name, label_names):
     plt.legend()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    #plt.title(title_name)
     plt.rcParams["figure.figsize"] = (20,10)
     plt.rcParams.update({'font.size': 16})
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='minor',axis="y")
@@ -73,7 +75,6 @@ def graph(data, x_label, y_label, pdf_name, label_names):
     plt.minorticks_on()
     plt.savefig(pdf_name + '.pdf') 
     plt.show()
-    #plt.close()
 
 def get_audio(directory, name):
     sr, data = wavfile.read(directory + "/" + name)

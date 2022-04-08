@@ -80,12 +80,12 @@ struct fft_pca_args* alloc_fft_pca_args(uint32_t vec_len, uint32_t vec_num)
     real eig_val = 0;
     real absol = 0.001;
     integer lwork = -1;
-    ssyevx_("Vectors", "Indices", "Upper", (integer*) &n, (real*) args->cov_mat, (integer*) &lda, (real*) 0, (real*) 0, (integer*) &lower_limit, (integer*) &upper_limit,
-           (real*) &absol, (integer*) &eig_val_found, (real*) &eig_val, (real*) args->princ_comp, (integer*) &ldz, (real*) &work, (integer*) &lwork, (integer*) args->iwork,
-           (integer*) &ifail, (integer*) &info);
+    //ssyevx_("Vectors", "Indices", "Upper", (integer*) &n, (real*) args->cov_mat, (integer*) &lda, (real*) 0, (real*) 0, (integer*) &lower_limit, (integer*) &upper_limit,
+    //       (real*) &absol, (integer*) &eig_val_found, (real*) &eig_val, (real*) args->princ_comp, (integer*) &ldz, (real*) &work, (integer*) &lwork, (integer*) args->iwork,
+    //       (integer*) &ifail, (integer*) &info);
     
-    args->lwork = 10000;
-    args->work = malloc(sizeof(float)*10000);
+    args->lwork = 50000;
+    args->work = malloc(sizeof(float)*50000);
 
     return args;
 }
@@ -167,19 +167,8 @@ void fft_pca(float* input_buffer, float* output_buffer, void* args)
            (real*) &absol, (integer*) &eig_val_found, (real*) &eig_val, (real*) princ_comp, (integer*) &ldz, (real*) work, (integer*) &lwork, (integer*) iwork,
            (integer*) &ifail, (integer*) &info);
 
+    fix_output(princ_comp, vec_len);
+    
     project_data(fft_buf, princ_comp, output_buffer, vec_len, vec_num);
-
-    fix_output(output_buffer, vec_num);
 }
 
-/*
-int main() {
-    float data[] = {1, 2, 6, 4, 3, 9, 7, 0, 12, 4, 7, 23, 9, 2, 7 , 3, 1, 3, 7, 1, 2, 9, 2, 1, 4, 5, 3, 1, 8, 2, 1, 1};
-    float output[] = {0, 0};
-
-    struct fft_pca_args* args = alloc_fft_pca_args(32, 16, 2);
-    fft_pca(data, output, (void*) args);
-    free_fft_pca_args(args);
-    
-}  
-*/

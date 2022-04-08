@@ -2,71 +2,130 @@ import numpy as np
 from graph import get_audio
 from graph import graph
 from bit_extract import tr_bit_extract
+from bit_extract import gen_bits
 import ctypes
 import matplotlib.pyplot as plt
 
-def euclid_dist(x,y):
-    total = 0
-    for i in range(len(x)):
-        total += np.square(x[i] - y[i])
+def multiple_windows_pca(x, y, vec_num, beg_pow2, end_pow2, max_shift):
+    so_file = "./distance_calc.so"
+    lib = ctypes.cdll.LoadLibrary("./distance_calc.so")
 
-    return np.sqrt(total)
+    euclid_dist_pca_c = lib.euclid_dist_shift_pca
+    euclid_dist_pca_c.restype = None
+    euclid_dist_pca_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
 
-def cosine_dist(x,y):
-    total = 0
-    for i in range(len(x)):
-       total += x[i]*y[i]
+    cosine_dist_pca_c = lib.cosine_dist_shift_pca
+    cosine_dist_pca_c.restype = None
+    cosine_dist_pca_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
+
+    iterations = end_pow2 - beg_pow2
+
+    results_ep = np.zeros((iterations, max_shift))
+    results_cp = np.zeros((iterations, max_shift))
    
-    return total
+    vec_len = np.power(2, beg_pow2)
+    for i in range(iterations):
+        print("Calculating Vector Length " + str(vec_len))
+        res_ep = np.zeros(max_shift, dtype=np.float32)
+        res_cp = np.zeros(max_shift, dtype=np.float32)
+        euclid_dist_pca_c(x, y, vec_len, vec_num, max_shift, res_ep)
+        cosine_dist_pca_c(x, y, vec_len, vec_num, max_shift, res_cp)
+        results_ep[i,:] = res_ep
+        results_cp[i,:] = res_ep
+        vec_len = 2*vec_len
 
-def levenshtein_dist(token1, token2):
-    distances = np.zeros((len(token1) + 1, len(token2) + 1))
+    return results_ep, results_cp
 
-    for t1 in range(len(token1) + 1):
-        distances[t1][0] = t1
+def gen_pca_data_audio(base_names, vec_len, vec_num, max_shift):
+    so_file = "./distance_calc.so"
+    lib = ctypes.cdll.LoadLibrary("./distance_calc.so")
 
-    for t2 in range(len(token2) + 1):
-        distances[0][t2] = t2
-        
-    a = 0
-    b = 0
-    c = 0
-    
-    for t1 in range(1, len(token1) + 1):
-        for t2 in range(1, len(token2) + 1):
-            if (token1[t1-1] == token2[t2-1]):
-                distances[t1][t2] = distances[t1 - 1][t2 - 1]
-            else:
-                a = distances[t1][t2 - 1]
-                b = distances[t1 - 1][t2]
-                c = distances[t1 - 1][t2 - 1]
-                
-                if (a <= b and a <= c):
-                    distances[t1][t2] = a + 1
-                elif (b <= a and b <= c):
-                    distances[t1][t2] = b + 1
-                else:
-                    distances[t1][t2] = c + 1
+    euclid_dist_pca_c = lib.euclid_dist_shift_pca
+    euclid_dist_pca_c.restype = None
+    euclid_dist_pca_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
 
-    return distances[len(token1)][len(token2)]
+    cosine_dist_pca_c = lib.cosine_dist_shift_pca
+    cosine_dist_pca_c.restype = None
+    cosine_dist_pca_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
 
-def gen_euclid_dist_shift(x, y, sample_len, max_shift):
-    res = np.zeros(max_shift)
-    for shift in range(max_shift):
-        buf1 = x[0:sample_len]
-        buf2 = y[shift:(shift + sample_len)]
-        res[shift] = euclid_dist(buf1, buf2)
-    return res
+    results_ep = np.zeros((len(base_names), max_shift))
+    results_cp = np.zeros((len(base_names), max_shift))
 
-def gen_euclid_dist_fft_shift(x, y, sample_len, max_shift):
-    res = np.zeros(max_shift)
-    for shift in range(max_shift):
-        buf1 = np.abs(np.fft.fft(x[0:sample_len]))
-        buf2 = np.abs(np.fft.fft(y[shift:(shift + sample_len)]))
-        res[shift] = euclid_dist(buf1, buf2)
-    return res
+    for i in range(len(base_names)):
+        track1_name = base_names[i] + "_track1.wav"
+        track2_name = base_names[i] + "_track2.wav"
+        track1 = get_audio(data_directory, track1_name)
+        track2 = get_audio(data_directory, track2_name)
+
+        res_ep = np.zeros(max_shift, dtype=np.float32)
+        res_cp = np.zeros(max_shift, dtype=np.float32)
+
+        euclid_dist_pca_c(track1, track2, vec_len, vec_num, max_shift, res_ep)
+        cosine_dist_pca_c(track1, track2, vec_len, vec_num, max_shift, res_cp)
+
+        results_ep[i,:] = res_ep
+        results_cp[i,:] = res_cp
+       
+    return results_ep, results_cp
+
+def gen_hamming_dist(base_names, vec_len, vec_num, max_shift):
+    so_file = "./distance_calc.so"
+    lib = ctypes.cdll.LoadLibrary("./distance_calc.so")   
+
+    gen_pca_samples_c = lib.gen_pca_samples
+    gen_pca_samples_c.restype = None
+    gen_pca_samples_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                       np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                       ctypes.c_int,
+                                       ctypes.c_int,
+                                       ctypes.c_int]
+      
+    results = np.zeros((len(base_names), max_shift))
+    pca_samples_t1 = np.zeros(vec_num)
+    pca_samples_t2 = np.zeros(vec_num)
+
+    for i in range(len(base_names)):
+        track1_name = base_names[i] + "_track1.wav"
+        track2_name = base_names[i] + "_track2.wav"
+        track1 = get_audio(data_directory, track1_name)
+        track2 = get_audio(data_directory, track2_name)
+        for j in range(max_shift):
+            gen_pca_samples_c(track1, pca_samples_t1, vec_len, vec_num, 0)
+            gen_pca_samples_c(track2, pca_samples_t2, vec_len, vec_num, j)
+            bits1 = gen_bits(pca_samples_t1)
+            bits2 = gen_bits(pca_samples_t2)
+            results[i,j] = compare_bits(bits1, bits2, vec_num)
+    return results
+
+def gen_hamming_dist_multiple_lens(base_names, label_names, pdf_base_name, vec_num, beg_pow2, end_pow2, max_shift):
+    iterations = end_pow2 - beg_pow2
+    for i in range(iterations):
+        vec_len = np.power(2, beg_pow2)
+        results = gen_hamming_dist(base_names, vec_len, vec_num, max_shift)
+        graph(results, "Time Sample Shift", "Bit Agreement(%)", "", "./graphs/" + pdf_base_name + "_" + str(vec_len), label_names)
 
 if __name__ == "__main__":
+   '''
    so_file = "./distance_calc.so"
    lib = ctypes.cdll.LoadLibrary("./distance_calc.so")
 
@@ -147,184 +206,119 @@ if __name__ == "__main__":
                                       ctypes.c_int,
                                       ctypes.c_int,
                                       np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
+   '''
 
    repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
    obs_vector_length = 2048
    vec_num = 64
-   max_shift = 4096
+   max_shift = 5000
    data_directory = repo_directory + "/data/audio/wav"
 
-   # Calc distances for music
+   graph_directory = "./graphs/"
+
+   # Vary Vector Sizes
+   base_names = ["near_music", "medium_music", "far_music", "near_fire_ambient", "medium_fire_ambient", "far_fire_ambient", "near_room_ambient", "medium_room_ambient", "far_room_ambient"]
+   labels = ["512 Length Vector", "1024 Length Vector", "2048 Length Vector", "4096 Length Vector"]
+   
+   results_ep = np.zeros((3, max_shift))
+   results_cp = np.zeros((3, max_shift))
+   for i in range(len(base_names)):
+       track1_name = base_names[i] + "_track1.wav"
+       track2_name = base_names[i] + "_track2.wav"
+       track1 = get_audio(data_directory, track1_name)
+       track2 = get_audio(data_directory, track2_name)
+
+       results_ep, results_cp = multiple_windows_pca(track1, track2, vec_num, 9, 13, max_shift)
+
+       graph(results_ep, "Time Sample Shifts", "Euclidean Distance", "Euclidian Distance Over Multiple Vector Sizes", graph_directory + "euclidian_" + base_names[i]  + "_pca", labels)
+       graph(results_cp, "Time Sample Shifts", "Cosine Distance", "Cosine Distance Over Multiple Vector Sizes", graph_directory + "cosine_" + base_names[i] + "_pca", labels)
+
+   # Gen hamming distances for multiple vector sizes
+   base_names = [["near_music", "medium_music", "far_music"], ["near_fire_ambient", "medium_fire_ambient", "far_fire_ambient"], ["near_room_ambient", "medium_room_ambient", "far_room_ambient"]]
+   labels = [["Near Music", "Medium Music", "Far Music"], ["Near Fire Ambient", "Medium Fire Ambient", "Far Fire Ambient"], ["Near Room Ambient", "Medium Room Ambient", "Far Room Ambient"]]
+   pdf_names = ["music_hamming_dist", "fire_hamming_dist", "room_hamming_dist"]
+   for i in range(len(base_names)):
+       gen_hamming_dist_multiple_lens(base_names[i], label_names[i], pdf_base_name[i], vec_num, 9, 13, max_shift)
+
+   '''
+    # Generate PCA data for music
    base_names = ["near_music", "medium_music", "far_music"]
    labels = ["Near Music", "Medium Music", "Far Music"]
-   results_et = np.zeros((3, max_shift))
-   results_ef = np.zeros((3, max_shift))
-   results_ep = np.zeros((3, max_shift))
-   results_ct = np.zeros((3, max_shift))
-   results_cf = np.zeros((3, max_shift))
-   results_cp = np.zeros((3, max_shift))
-   results_lt = np.zeros((3, max_shift))
-   results_lf = np.zeros((3, max_shift))
-   results_lp = np.zeros((3, max_shift))
-   for i in range(len(base_names)):
-       track1_name = base_names[i] + "_track1.wav"
-       track2_name = base_names[i] + "_track2.wav"
-       track1 = get_audio(data_directory, track1_name)
-       track2 = get_audio(data_directory, track2_name)
+   results_ep, results_cp = gen_pca_data_audio(base_names, obs_vector_length, vec_num, max_shift)
+   graph(results_ep, "Time Sample Shifts", "Euclidean Distance", "", graph_directory + "euclidian_dist_music_pca", labels)
+   graph(results_cp, "Time Sample Shifts", "Cosine Distance", "", graph_directory + "cosine_dist_music_pca", labels)
 
-       res_et = np.zeros(max_shift, dtype=np.float32)
-       res_ef = np.zeros(max_shift, dtype=np.float32)
-       res_ep = np.zeros(max_shift, dtype=np.float32)
-       res_ct = np.zeros(max_shift, dtype=np.float32)
-       res_cf = np.zeros(max_shift, dtype=np.float32)
-       res_cp = np.zeros(max_shift, dtype=np.float32)
-       res_lt = np.zeros(max_shift, dtype=np.float32)
-       res_lf = np.zeros(max_shift, dtype=np.float32)
-       res_lp = np.zeros(max_shift, dtype=np.float32)
-
-       euclid_dist_c(track1, track2, obs_vector_length, max_shift, res_et)
-       cosine_dist_c(track1, track2, obs_vector_length, max_shift, res_ct)
-       levenshtein_dist_c(track1, track2, obs_vector_length, max_shift, res_lt)
-       euclid_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_ef)
-       cosine_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_cf)
-       levenshtein_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_lf)
-       euclid_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_ep)
-       #cosine_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_cp)
-       #levenshtein_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_lp)
-
-       results_et[i,:] = res_et
-       results_ef[i,:] = res_ef
-       results_ep[i,:] = res_ep
-       results_ct[i,:] = res_ct
-       results_cf[i,:] = res_cf
-       results_cp[i,:] = res_cp
-       results_lt[i,:] = res_lt
-       results_lf[i,:] = res_lf
-       results_lp[i,:] = res_lp
-
-   graph(results_et, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_music_time", labels)
-   graph(results_ef, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_music_fft", labels)
-   graph(results_ep, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_music_pca", labels)
-   graph(results_ct, "Time Sample Shifts", "Cosine Distance", "cosine_dist_music_time", labels)
-   graph(results_cf, "Time Sample Shifts", "Cosine Distance", "cosine_dist_music_fft", labels)
-   graph(results_cp, "Time Sample Shifts", "Cosine Distance", "cosine_dist_music_pca", labels)
-   graph(results_lt, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_music_time", labels)
-   graph(results_lf, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_music_fft", labels)
-   graph(results_lp, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_music_pca", labels)
-
-   # Calc distances for fire ambience
+   # Generate PCA data for fire ambience
    base_names = ["near_fire_ambient", "medium_fire_ambient", "far_fire_ambient"]
    labels = ["Near Fire Ambience", "Medium Fire Ambience", "Far Fire Ambience"]
-   results_et = np.zeros((3, max_shift))
-   results_ef = np.zeros((3, max_shift))
-   results_ep = np.zeros((3, max_shift))
-   results_ct = np.zeros((3, max_shift))
-   results_cf = np.zeros((3, max_shift))
-   results_cp = np.zeros((3, max_shift))
-   results_lt = np.zeros((3, max_shift))
-   results_lf = np.zeros((3, max_shift))
-   results_lp = np.zeros((3, max_shift))
-   for i in range(len(base_names)):
-       track1_name = base_names[i] + "_track1.wav"
-       track2_name = base_names[i] + "_track2.wav"
-       track1 = get_audio(data_directory, track1_name)
-       track2 = get_audio(data_directory, track2_name)
+   results_ep, results_cp = gen_pca_data_audio(base_names, obs_vector_length, vec_num, max_shift)
+   graph(results_ep, "Time Sample Shifts", "Euclidean Distance", "", graph_directory + "euclidian_dist_fire_ambient_pca", labels)
+   graph(results_cp, "Time Sample Shifts", "Cosine Distance", "", graph_directory + "cosine_dist_fire_ambient_pca", labels)
 
-       res_et = np.zeros(max_shift, dtype=np.float32)
-       res_ef = np.zeros(max_shift, dtype=np.float32)
-       res_ep = np.zeros(max_shift, dtype=np.float32)
-       res_ct = np.zeros(max_shift, dtype=np.float32)
-       res_cf = np.zeros(max_shift, dtype=np.float32)
-       res_cp = np.zeros(max_shift, dtype=np.float32)
-       res_lt = np.zeros(max_shift, dtype=np.float32)
-       res_lf = np.zeros(max_shift, dtype=np.float32)
-       res_lp = np.zeros(max_shift, dtype=np.float32)
+   # Generate PCA data for room ambience
+   base_names = ["near_room_ambient", "medium_room_ambient", "far_room_ambient"]
+   labels = ["Near Room Ambience", "Medium Room Ambience", "Far Room Ambience"]
+   results_ep, results_cp = gen_pca_data_audio(base_names, obs_vector_length, vec_num, max_shift)
+   graph(results_ep, "Time Sample Shifts", "Euclidean Distance", "", graph_directory + "euclidian_dist_room_ambient_pca", labels)
+   graph(results_cp, "Time Sample Shifts", "Cosine Distance", "", graph_directory + "cosine_dist_room_ambient_pca", labels)
+   '''
 
-       euclid_dist_c(track1, track2, obs_vector_length, max_shift, res_et)
-       cosine_dist_c(track1, track2, obs_vector_length, max_shift, res_ct)
-       levenshtein_dist_c(track1, track2, obs_vector_length, max_shift, res_lt)
-       euclid_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_ef)
-       cosine_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_cf)
-       levenshtein_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_lf)
-       euclid_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_ep)
-       cosine_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_cp)
-       levenshtein_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_lp)
-
-       results_et[i,:] = res_et
-       results_ef[i,:] = res_ef
-       results_ep[i,:] = res_ep
-       results_ct[i,:] = res_ct
-       results_cf[i,:] = res_cf
-       results_cp[i,:] = res_cp
-       results_lt[i,:] = res_lt
-       results_lf[i,:] = res_lf
-       results_lp[i,:] = res_lp
-
-   graph(results_et, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_fire_ambient_time", labels)
-   graph(results_ef, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_fire_ambient_fft", labels)
-   graph(results_ep, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_fire_ambient_pca", labels)
-   graph(results_ct, "Time Sample Shifts", "Cosine Distance", "cosine_dist_fire_ambient_time", labels)
-   graph(results_cf, "Time Sample Shifts", "Cosine Distance", "cosine_dist_fire_ambient_fft", labels)
-   graph(results_cp, "Time Sample Shifts", "Cosine Distance", "cosine_dist_fire_ambient_pca", labels)
-   graph(results_lt, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_fire_ambient_time", labels)
-   graph(results_lf, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_fire_ambient_fft", labels)
-   graph(results_lp, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_fire_ambient_pca", labels)
-
-
+   '''
    # Distances for room ambience
    base_names = ["near_room_ambient", "medium_room_ambient", "far_room_ambient"]
    labels = ["Near Room Ambience", "Medium Room Ambience", "Far Room Ambience"]
-   results_et = np.zeros((3, max_shift))
-   results_ef = np.zeros((3, max_shift))
+   #results_et = np.zeros((3, max_shift))
+   #results_ef = np.zeros((3, max_shift))
    results_ep = np.zeros((3, max_shift))
-   results_ct = np.zeros((3, max_shift))
-   results_cf = np.zeros((3, max_shift))
+   #results_ct = np.zeros((3, max_shift))
+   #results_cf = np.zeros((3, max_shift))
    results_cp = np.zeros((3, max_shift))
-   results_lt = np.zeros((3, max_shift))
-   results_lf = np.zeros((3, max_shift))
-   results_lp = np.zeros((3, max_shift))
+   #results_lt = np.zeros((3, max_shift))
+   #results_lf = np.zeros((3, max_shift))
+   #results_lp = np.zeros((3, max_shift))
    for i in range(len(base_names)):
        track1_name = base_names[i] + "_track1.wav"
        track2_name = base_names[i] + "_track2.wav"
        track1 = get_audio(data_directory, track1_name)
        track2 = get_audio(data_directory, track2_name)
 
-       res_et = np.zeros(max_shift, dtype=np.float32)
-       res_ef = np.zeros(max_shift, dtype=np.float32)
+       #res_et = np.zeros(max_shift, dtype=np.float32)
+       #res_ef = np.zeros(max_shift, dtype=np.float32)
        res_ep = np.zeros(max_shift, dtype=np.float32)
-       res_ct = np.zeros(max_shift, dtype=np.float32)
-       res_cf = np.zeros(max_shift, dtype=np.float32)
+       #res_ct = np.zeros(max_shift, dtype=np.float32)
+       #res_cf = np.zeros(max_shift, dtype=np.float32)
        res_cp = np.zeros(max_shift, dtype=np.float32)
-       res_lt = np.zeros(max_shift, dtype=np.float32)
-       res_lf = np.zeros(max_shift, dtype=np.float32)
-       res_lp = np.zeros(max_shift, dtype=np.float32)
+       #res_lt = np.zeros(max_shift, dtype=np.float32)
+       #res_lf = np.zeros(max_shift, dtype=np.float32)
+       #res_lp = np.zeros(max_shift, dtype=np.float32)
 
-       euclid_dist_c(track1, track2, obs_vector_length, max_shift, res_et)
-       cosine_dist_c(track1, track2, obs_vector_length, max_shift, res_ct)
-       levenshtein_dist_c(track1, track2, obs_vector_length, max_shift, res_lt)
-       euclid_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_ef)
-       cosine_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_cf)
-       levenshtein_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_lf)
+       #euclid_dist_c(track1, track2, obs_vector_length, max_shift, res_et)
+       #cosine_dist_c(track1, track2, obs_vector_length, max_shift, res_ct)
+       #levenshtein_dist_c(track1, track2, obs_vector_length, max_shift, res_lt)
+       #euclid_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_ef)
+       #cosine_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_cf)
+       #levenshtein_dist_fft_c(track1, track2, obs_vector_length, max_shift, res_lf)
        euclid_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_ep)
        cosine_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_cp)
-       levenshtein_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_lp)
+       #levenshtein_dist_pca_c(track1, track2, obs_vector_length, vec_num, max_shift, res_lp)
 
-       results_et[i,:] = res_et
-       results_ef[i,:] = res_ef
+       #results_et[i,:] = res_et
+       #results_ef[i,:] = res_ef
        results_ep[i,:] = res_ep
-       results_ct[i,:] = res_ct
-       results_cf[i,:] = res_cf
+       #results_ct[i,:] = res_ct
+       #results_cf[i,:] = res_cf
        results_cp[i,:] = res_cp
-       results_lt[i,:] = res_lt
-       results_lf[i,:] = res_lf
-       results_lp[i,:] = res_lp
+       #results_lt[i,:] = res_lt
+       #results_lf[i,:] = res_lf
+       #results_lp[i,:] = res_lp
 
-   graph(results_et, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_room_ambient_time", labels)
-   graph(results_ef, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_room_ambient_fft", labels)
+   #graph(results_et, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_room_ambient_time", labels)
+   #graph(results_ef, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_room_ambient_fft", labels)
    graph(results_ep, "Time Sample Shifts", "Euclidian Distance", "euclidian_dist_room_ambient_pca", labels)
-   graph(results_ct, "Time Sample Shifts", "Cosine Distance", "cosine_dist_room_ambient_time", labels)
-   graph(results_cf, "Time Sample Shifts", "Cosine Distance", "cosine_dist_room_ambient_fft", labels)
+   #graph(results_ct, "Time Sample Shifts", "Cosine Distance", "cosine_dist_room_ambient_time", labels)
+   #graph(results_cf, "Time Sample Shifts", "Cosine Distance", "cosine_dist_room_ambient_fft", labels)
    graph(results_cp, "Time Sample Shifts", "Cosine Distance", "cosine_dist_room_ambient_pca", labels)
-   graph(results_lt, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_room_ambient_time", labels)
-   graph(results_lf, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_room_ambient_fft", labels)
-   graph(results_lp, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_room_ambient_pca", labels)
+   #graph(results_lt, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_room_ambient_time", labels)
+   #graph(results_lf, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_room_ambient_fft", labels)
+   #graph(results_lp, "Time Sample Shifts", "Levenshtein Distance", "levenshtein_dist_room_ambient_pca", labels)
+   '''

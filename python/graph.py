@@ -71,14 +71,14 @@ def graph(data, x_label, y_label, title_name, pdf_name, label_names):
     plt.legend()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    #plt.title(title_name)
+    plt.title(title_name)
     plt.rcParams["figure.figsize"] = (20,10)
     plt.rcParams.update({'font.size': 16})
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='minor',axis="y")
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='major',axis="y")
     plt.minorticks_on()
     plt.savefig(pdf_name + '.pdf') 
-    #plt.show()
+    plt.show()
 
 def get_audio(directory, name):
     sr, data = wavfile.read(directory + "/" + name)

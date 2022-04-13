@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "threaded_distance.h"
 #include "pca_wrapper.h"
+#include "threaded_pca_calc.h"
 
 #define MAX_THREAD 10
 
@@ -40,11 +41,6 @@ void levenshtein_dist_shift_pca(float* buf1, float* buf2, int vec_len, int vec_n
     threaded_dist_calc_pca((Dist_Func) &levenshtein_dist, buf1, buf2, vec_len, vec_num,  max_shift, MAX_THREAD, result);
 }
 
-void gen_pca_samples(float* input_buffer, float* output_buffer, int vec_len, int vec_num, int starting_pos)
-{
-    struct fft_pca_args* args = alloc_fft_pca_args(vec_len, vec_num);
-    float* data = input_buffer + starting_pos;
-    fft_pca(data, output_buffer, (void*) args);
-    free_fft_pca_args(args);
+void pca_shifted_calcs(float* buf, int vec_len, int vec_num, int max_shift, float* result) {
+    threaded_calc_pca(buf, vec_len, vec_num, max_shift, MAX_THREAD, result);
 }
-

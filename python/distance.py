@@ -91,7 +91,6 @@ def gen_pca_data_audio(base_names, vec_len, vec_num, max_shift):
     return results_ep, results_cp
 
 def gen_pca_samples(x, vec_len, vec_num, max_shift, pickle_name):
-    so_file = "./distance_calc.so"
     lib = ctypes.cdll.LoadLibrary("./distance_calc.so")   
 
     gen_pca_samples_c = lib.pca_shifted_calcs
@@ -106,26 +105,49 @@ def gen_pca_samples(x, vec_len, vec_num, max_shift, pickle_name):
 
     gen_pca_samples_c(x, vec_len, vec_num, max_shift, results)
 
-    split_results = np.array(np.split(results, vec_num))
-    print(pickle_name)
-    print(results)
-    print(split_results)
+    split_results = np.array(np.split(results, max_shift))
+
     pickle_it(pickle_name, split_results)
 
 def gen_bit_extract_graphs(buf1, buf2):
-    shift_len = len(buf1[0,:])
-    bit_len = len(buf1[:,0])
-    print(shift_len)
-    print(bit_len)
+    shift_len = len(buf1[:,0])
+    bit_len = len(buf1[0,:])
+
     hamming_dist = np.zeros(shift_len)
     
-    host_bits = gen_bits(buf1[:,0])
-    print(buf1)
-    print(buf2)
+    host_bits = gen_bits(buf1[0,:])
+
     for i in range(shift_len):
-        device_bits = gen_bits(buf2[:,i])
+        device_bits = gen_bits(buf2[i,:])
         hamming_dist[i] = compare_bits(host_bits, device_bits, bit_len)
     return hamming_dist
+
+def gen_rmse(buf1, buf2):
+    shift_len = len(buf1[:,0])
+    bit_len = len(buf1[0,:])
+
+    ret = np.zeros(shift_len)
+
+    host = buf1[0,:]
+
+    for i in range(shift_len):
+        device = buf2[i,:]
+        ret[i] = np.sqrt(np.square(np.subtract(host,device)).mean())
+    return ret
+
+def gen_cos(buf1, buf2):
+    shift_len = len(buf1[:,0])
+    bit_len = len(buf1[0,:])
+
+    ret = np.zeros(shift_len)
+
+    host = buf1[0,:]
+
+    for i in range(shift_len):
+        device = buf2[i,:]
+        for j in range(bit_len):
+            ret[i] += device[j]*host[j]
+    return ret
     
 if __name__ == "__main__":
    '''
@@ -214,7 +236,7 @@ if __name__ == "__main__":
    repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
    obs_vector_length = 2048
    vec_num = 64
-   max_shift = 2
+   max_shift = 5000
    data_directory = repo_directory + "/data/audio/wav"
 
    graph_directory = "./graphs/"
@@ -346,7 +368,8 @@ if __name__ == "__main__":
        #graph(results_ep, "Time Sample Shifts", "Euclidean Distance", "Euclidian Distance Over Multiple Vector Sizes", graph_directory + "euclidian_" + base_names[i]  + "_pca", labels)
        #graph(results_cp, "Time Sample Shifts", "Cosine Distance", "Cosine Distance Over Multiple Vector Sizes", graph_directory + "cosine_" + base_names[i] + "_pca", labels)
    '''
-   
+  
+   '''
    base_names = ["near_music", "medium_music", "far_music", "near_fire_ambient", "medium_fire_ambient", "far_fire_ambient", "near_room_ambient", "medium_room_ambient", "far_room_ambient"]
    beg_pow2 = 9
    end_pow2 = 13
@@ -358,7 +381,7 @@ if __name__ == "__main__":
        track2_name = base_names[i] + "_track2.wav"
        track1 = get_audio(data_directory, track1_name)
        track2 = get_audio(data_directory, track2_name)
-
+       
        vec_len = np.power(2, beg_pow2)
        for j in range(iterations):
            pickle_name1 = "./graphs/pickled/" + base_names[i] + "_track1_" + "veclen" + str(vec_len) + "_vecnum" + str(vec_num) +  "_maxshift" + str(max_shift)
@@ -367,13 +390,16 @@ if __name__ == "__main__":
            gen_pca_samples(track2, vec_len, vec_num, max_shift, pickle_name2)
            vec_len = 2*vec_len
    '''
-   names = ["far_room_ambient_track1_veclen2048_vecnum64_maxshift5000_pickled.npy", "far_room_ambient_track2_veclen2048_vecnum64_maxshift5000_pickled.npy", "medium_room_ambient_track1_veclen2048_vecnum64_maxshift5000_pickled.npy", "medium_room_ambient_track2_veclen2048_vecnum64_maxshift5000_pickled.npy", "near_room_ambient_track1_veclen2048_vecnum64_maxshift5000_pickled.npy", "near_room_ambient_track2_veclen2048_vecnum64_maxshift5000_pickled.npy"]
+  
+   base_name = "fire_ambient"
+   vec_len = "4096" 
+   names = ["near_" + base_name + "_track1_veclen" + vec_len + "_vecnum64_maxshift5000_pickled.npy", "near_" + base_name + "_track2_veclen" + vec_len  + "_vecnum64_maxshift5000_pickled.npy", "medium_" + base_name + "_track1_veclen" + vec_len  + "_vecnum64_maxshift5000_pickled.npy", "medium_" + base_name + "_track2_veclen" +  vec_len + "_vecnum64_maxshift5000_pickled.npy", "far_" + base_name  + "_track1_veclen" + vec_len + "_vecnum64_maxshift5000_pickled.npy", "far_" + base_name + "_track2_veclen" + vec_len  + "_vecnum64_maxshift5000_pickled.npy"]
 
    res = np.zeros((3, 5000))
    for i in range(3):
        buf1 = np.load(directory + names[2*i])
        buf2 = np.load(directory + names[2*i + 1])
-       res[i,:] = gen_bit_extract_graphs(buf1, buf2)
+       res[i,:] = gen_cos(buf1, buf2)
 
-   graph(res, "Time Sample Shifts", "Bit Agreement(%)", "Room Ambience Bit Agreement", graph_directory + "room_ambient_bit_agreement", labels)
-   '''
+   graph(res, "Time Sample Shifts", "cos", "check", graph_directory +  base_name + "_check_" + vec_len, labels)
+   

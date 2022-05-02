@@ -65,6 +65,7 @@ def graph(data, x_label, y_label, title_name, pdf_name, label_names):
     x = range(len(data[0,:]))
     data_plots = len(data[:,0])
     colors = ['#659DF6','#FF9300','#B4B4B4',"#666666"]
+    plt.rcParams["figure.figsize"] = (20,10)
     for i in range(data_plots):
         plt.plot(x, data[i], color=colors[i], linewidth=0.7, label=label_names[i],)
     plt.rcParams["font.family"] = "serif"
@@ -72,7 +73,6 @@ def graph(data, x_label, y_label, title_name, pdf_name, label_names):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title_name)
-    plt.rcParams["figure.figsize"] = (20,10)
     plt.rcParams.update({'font.size': 16})
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='minor',axis="y")
     plt.grid(color='gainsboro', linestyle='--',linewidth=0.5,visible=True,which='major',axis="y")

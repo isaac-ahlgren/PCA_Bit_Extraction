@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <stdio.h>
 #include "threaded_pca_calc.h"
 
 struct fft_calc_args {
@@ -19,7 +20,6 @@ void* calc_fft_pca(void* input)
     float* out_buf = &inp->out_buf[inp->out_start_position];
 
     for (int i = 0; i < inp->shift_len; i++) {
-
        fft_pca(buf + i, out_buf + i*inp->output_len, inp->args);
 
     }

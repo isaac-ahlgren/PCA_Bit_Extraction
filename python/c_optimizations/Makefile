@@ -2,15 +2,13 @@
 
 CC = gcc
 
-CFLAGS = -g -fPIC -shared -Wall -lpthread -lm -lkissfft-float
+CFLAGS = -g -fPIC -shared -Wall -lpthread -lm
+TEST_CFLAGS = -g -Wall -lpthread -lm
 
 TARGET = distance_calc.so
+TEST_TARGET = test.o
 
-LIBS = \
-	liblapack.a \
-	libblas.a \
-	libcblaswr.a \
-	libf2c.a
+KISS_FFT = ./libkissfft-float.a
 
 CFILES = \
 	distance.c \
@@ -18,11 +16,15 @@ CFILES = \
 	threaded_pca_calc.c \
 	fft_wrapper.c \
 	pca_wrapper.c \
+	eig_vec_decomp.c \
 	main.c
 
 all: $(CFILES)
-	$(CC) $(CFLAGS) -o $(TARGET) $(CFILES) $(LIBS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(CFILES) $(KISS_FFT)
 	mv $(TARGET) ..
+
+test: $(CFILES)
+	$(CC) $(TEST_CFLAGS) -o $(TEST_TARGET) $(CFILES) $(KISS_FFT)
 
 clean:
 	rm ../$(TARGET)

@@ -202,23 +202,21 @@ if __name__ == "__main__":
    obs_vector_length = 2048
    vec_num = 64
    max_shift = 5000
-   data_directory = repo_directory + "/data/audio"
+   data_directory = "../audio/"
 
    graph_directory = "./graphs/"
 
    directory = graph_directory + "pickled/"
    
-   
    vec_labels = ["512 Length Vector", "1024 Length Vector", "2048 Length Vector", "4096 Length Vector"]
    labels = ["Near", "Medium", "Far"]
-   
    
    s_and_us = ["secured", "unsecured"]
    types = ["conversation", "cooking_audio", "music", "room_audio"]
    max_shift = 5000
    vec_num = 64
-   beg_pow2 = 9
-   end_pow2 = 13
+   beg_pow2 = 13
+   end_pow2 = 15
    iterations = end_pow2 - beg_pow2
 
    for i in range(len(s_and_us)):
@@ -229,6 +227,7 @@ if __name__ == "__main__":
                
                vec_len = np.power(2, beg_pow2)
                for h in range(iterations):
+                   print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
                    gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
                    vec_len = 2*vec_len
 

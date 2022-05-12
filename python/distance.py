@@ -231,6 +231,47 @@ if __name__ == "__main__":
                    gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
                    vec_len = 2*vec_len
 
+   for i in range(len(s_and_us)):
+       for j in range(len(types)):
+           for l in range(1,3):
+               for k in range(1,5):
+                   track_name = s_and_us[i] + "/" + types[j] + "/" + s_and_us[i] + "_" + types[j] + "_48khz_track" + str(k) + "_ds" + str(2*l) + ".wav"
+                   track = get_audio(data_directory, track_name)
+
+                   vec_len = np.power(2, beg_pow2)
+                   for h in range(iterations):
+                       print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
+                       gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
+                       vec_len = 2*vec_len
+
+   s_and_us = ["secured"]
+
+   for i in range(len(s_and_us)):
+       for j in range(len(types)):
+           for k in range(1,5):
+               track_name = s_and_us[i] + "/" + types[j] + "/exp2/" + s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + ".wav"
+               track = get_audio(data_directory, track_name)
+
+               vec_len = np.power(2, beg_pow2)
+               for h in range(iterations):
+                   print(s_and_us[i] + "_" + types[j] + "exp2_track" + str(k) + "_veclen" + str(vec_len))
+                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "exp2_track" + str(k) + "_veclen" + str(vec_len))
+                   vec_len = 2*vec_len
+
+   for i in range(len(s_and_us)):
+       for j in range(len(types)):
+           for l in range(1,3):
+               for k in range(1,5):
+                   track_name = s_and_us[i] + "/" + types[j] + "/exp2/" + s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_ds" + str(2*l) + ".wav"
+                   track = get_audio(data_directory, track_name)
+
+                   vec_len = np.power(2, beg_pow2)
+                   for h in range(iterations):
+                       print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
+                       gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
+                       vec_len = 2*vec_len
+
+
            
    
 

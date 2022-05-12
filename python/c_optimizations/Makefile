@@ -2,7 +2,7 @@
 
 CC = gcc
 
-CFLAGS = -g -fPIC -shared -Wall -lpthread -lm
+CFLAGS = -g -fPIC -shared -D__X86_SSE -O0 -march=native -Wall -lpthread -lm
 TEST_CFLAGS = -g -Wall -lpthread -lm
 
 TARGET = distance_calc.so

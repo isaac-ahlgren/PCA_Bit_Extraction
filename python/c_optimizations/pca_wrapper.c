@@ -44,6 +44,7 @@ void cov(float* A, float* cov_mat, float* means, uint32_t vec_len, uint32_t vec_
     }
 }
 
+/*
 void print_matrix(float* mat, int columns, int rows) {
     for (int i = 0; i < columns*rows; i++) {
         printf("%f ", mat[i]);
@@ -53,13 +54,13 @@ void print_matrix(float* mat, int columns, int rows) {
     }
     printf("\n");
 }
-
+*/
 struct fft_pca_args* alloc_fft_pca_args(uint32_t vec_len, uint32_t vec_num)
 {
     struct fft_pca_args* args = malloc(sizeof(struct fft_pca_args));
     
     args->f_args = alloc_fft_args(vec_len);
-    args->e_args = alloc_eig_args((vec_len/2 + 1), 1000, 0.001);
+    args->e_args = alloc_eig_args((vec_len/2 + 1), 10000, 0.01);
     args->vec_len = vec_len;
     args->vec_num = vec_num;
     args->fft_buf = malloc(sizeof(float)*(vec_len/2 + 1)*vec_num);

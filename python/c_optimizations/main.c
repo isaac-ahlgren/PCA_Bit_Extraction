@@ -3,7 +3,7 @@
 #include "pca_wrapper.h"
 #include "threaded_pca_calc.h"
 
-#define MAX_THREAD 1
+#define MAX_THREAD 10
 
 void euclid_dist_shift(float* buf1, float* buf2, int input_len, int max_shift, float* result) {
     threaded_dist_calc((Dist_Func) &euclid_dist, buf1, buf2, input_len, max_shift, MAX_THREAD, result);

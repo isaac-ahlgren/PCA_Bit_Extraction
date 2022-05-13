@@ -219,6 +219,7 @@ if __name__ == "__main__":
    end_pow2 = 15
    iterations = end_pow2 - beg_pow2
 
+   # Reg 8192 and 16384
    for i in range(len(s_and_us)):
        for j in range(len(types)):
            for k in range(1,5):
@@ -231,6 +232,7 @@ if __name__ == "__main__":
                    gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
                    vec_len = 2*vec_len
 
+   # Ds Reg 8192 and 16384
    for i in range(len(s_and_us)):
        for j in range(len(types)):
            for l in range(1,3):
@@ -245,7 +247,8 @@ if __name__ == "__main__":
                        vec_len = 2*vec_len
 
    s_and_us = ["secured"]
-
+   
+   # Exp2 8192 and 16384
    for i in range(len(s_and_us)):
        for j in range(len(types)):
            for k in range(1,5):
@@ -254,10 +257,11 @@ if __name__ == "__main__":
 
                vec_len = np.power(2, beg_pow2)
                for h in range(iterations):
-                   print(s_and_us[i] + "_" + types[j] + "exp2_track" + str(k) + "_veclen" + str(vec_len))
-                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "exp2_track" + str(k) + "_veclen" + str(vec_len))
+                   print(s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len))
+                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len))
                    vec_len = 2*vec_len
 
+   # Ds Exp2 8192 and 16384
    for i in range(len(s_and_us)):
        for j in range(len(types)):
            for l in range(1,3):
@@ -267,14 +271,40 @@ if __name__ == "__main__":
 
                    vec_len = np.power(2, beg_pow2)
                    for h in range(iterations):
-                       print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
-                       gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
+                       print(s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
+                       gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
                        vec_len = 2*vec_len
 
+   beg_pow2 = 9
+   end_pow2 = 15
+   iterations = end_pow2 - beg_pow2
+   '''
+   # Reg Ds8 buf size 2^9 - 2^14
+   for i in range(len(s_and_us)):
+       for j in range(len(types)):
+           for k in range(1,5):
+               track_name = s_and_us[i] + "/" + types[j] + "/" + s_and_us[i] + "_" + types[j] + "_48khz_track" + str(k) + "_ds8.wav"
+               track = get_audio(data_directory, track_name)
 
-           
-   
+               vec_len = np.power(2, beg_pow2)
+               for h in range(iterations):
+                   print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
+                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
+                   vec_len = 2*vec_len
 
+   # Exp2 Ds8 buf size 2^9 - 2^14
+   for i in range(len(s_and_us)):
+       for j in range(len(types)):
+           for k in range(1,5):
+               track_name = s_and_us[i] + "/" + types[j] + "/exp2/" + s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_ds8.wav"
+               track = get_audio(data_directory, track_name)
+
+               vec_len = np.power(2, beg_pow2)
+               for h in range(iterations):
+                   print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
+                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
+                   vec_len = 2*vec_len
+   '''
    data_directory = data_directory + "/secured"
    labels = ["Near", "Medium", "Far"]
    titles = ["Conversation", "Cooking Ambient", "Music", "Room Ambient"]

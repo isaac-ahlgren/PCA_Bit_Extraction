@@ -14,4 +14,6 @@ python/c_optimizations/libblas.a
 python/c_optimizations/libcblaswr.a
 python/c_optimizations/libf2c.a
 python/c_optimizations/liblapack.a
+python/c_optimizations/libkissfft-float.a
 python/graphs/
+audio/

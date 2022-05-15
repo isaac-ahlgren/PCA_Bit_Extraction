@@ -162,6 +162,6 @@ void fft_pca_eig(float* input_buffer, float* convergence, float* eigen_vectors, 
     fix_output(eig_vec, vec_len);
 
     for (int i = 0; i < vec_len; i++) {
-        eig_vectors[i] = eig_vec[i];
+        eigen_vectors[i] = eig_vec[i];
     }
 }

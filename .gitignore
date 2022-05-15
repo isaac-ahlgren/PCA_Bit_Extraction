@@ -9,7 +9,7 @@ symbolic_cov*
 diff_*
 matlab/*.asv
 python/__pycache__/
-python/distanc_calc.so
+python/distance_calc.so
 python/c_optimizations/libblas.a
 python/c_optimizations/libcblaswr.a
 python/c_optimizations/libf2c.a

@@ -14,11 +14,11 @@ struct fft_calc_args {
 };
 
 struct eig_calc_args {
-    struct fft_calc_args args;
+    struct fft_calc_args* args;
     float* eig_buffer;
     int eig_len;
     int eig_buffer_position;
-}
+};
 
 void* calc_fft_pca(void* input)
 {
@@ -35,7 +35,6 @@ void* calc_fft_pca_eig(void* input)
 {
     struct eig_calc_args* eig_inp = (struct eig_calc_args*) input;
     float* eig_buf = &eig_inp->eig_buffer[eig_inp->eig_buffer_position];
-    int eig_len = eig_inp->eig_len;
     struct fft_calc_args* inp = eig_inp->args;
     float* buf = &inp->buf[inp->buf_start_position];
     float* out_buf = &inp->out_buf[inp->out_start_position];

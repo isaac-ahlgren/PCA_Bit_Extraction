@@ -15,6 +15,7 @@ struct fft_pca_args {
 };
 
 void fft_pca(float* input_buffer, float* output_buffer, void* args);
+void fft_pca_eig(float* input_buffer, float* convergence, float* eigen_vectors, void* args);
 struct fft_pca_args* alloc_fft_pca_args(uint32_t vec_len, uint32_t vec_num);
 void free_fft_pca_args(struct fft_pca_args* args);
 

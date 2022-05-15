@@ -74,7 +74,7 @@ void matrix_vec_mult(float* mat, uint32_t dim_size, float* vec, float* new_vec)
     }
 }
 
-void eig_decomp(float* matrix, struct eig_decomp_args* args)
+int eig_decomp(float* matrix, struct eig_decomp_args* args)
 {
     float* mat = matrix;
     float* eig_vec = args->eig_vec;
@@ -109,10 +109,12 @@ void eig_decomp(float* matrix, struct eig_decomp_args* args)
     if (i == execs) {
         printf("COULDN'T CONVERGE, Error: %e ", err);
     }
-    printf("Iterations: %ld\n", i);
+    //printf("Iterations: %ld\n", i);
 
     args->eig_vec = eig_vec;
     args->s = s;
+    
+    return (int) i;
 }
 
 /*

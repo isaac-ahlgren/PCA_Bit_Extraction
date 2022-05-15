@@ -110,6 +110,28 @@ def gen_pca_samples(x, vec_len, vec_num, max_shift, pickle_name):
 
     pickle_it(pickle_name, split_results)
 
+def gen_eig_vec(x, vec_len, vec_num, max_shift, conv_pickle_name, eig_pickle_name):
+    lib = ctypes.cdll.LoadLibrary("./distance_calc.so")
+
+    gen_pca_samples_c = lib.eig_shifted_calcs
+    gen_pca_samples_c.restype = None
+    gen_pca_samples_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  ctypes.c_int,
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
+
+    conv_results = np.zeros(max_shift, dtype=np.float32)
+    eig_results = np.zeros(max_shift*(vec_len/2 + 1), dtype=np.float32)
+
+    gen_pca_samples_c(x, vec_len, vec_num, max_shift, conv_results, eig_results)
+
+    eig_split_results = np.array(np.split(eig_results, max_shift))
+
+    pickle_it(eig_pickle_name, eig_split_results)
+    pickle_it(conv_pickle_name, conv_results)
+
 def gen_bit_extract_graphs(buf1, buf2):
     shift_len = len(buf1[:,0])
     bit_len = len(buf1[0,:])
@@ -202,7 +224,7 @@ if __name__ == "__main__":
    obs_vector_length = 2048
    vec_num = 64
    max_shift = 5000
-   data_directory = "../audio/"
+   data_directory = "/home/ikey/repos/PCA_Bit_Extraction/data/audio"
 
    graph_directory = "./graphs/"
 
@@ -218,7 +240,7 @@ if __name__ == "__main__":
    beg_pow2 = 13
    end_pow2 = 15
    iterations = end_pow2 - beg_pow2
-
+   '''
    # Reg 8192 and 16384
    for i in range(len(s_and_us)):
        for j in range(len(types)):
@@ -274,11 +296,13 @@ if __name__ == "__main__":
                        print(s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
                        gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds" + str(2*l))
                        vec_len = 2*vec_len
-
-   beg_pow2 = 9
-   end_pow2 = 15
-   iterations = end_pow2 - beg_pow2
    '''
+   '''
+   s_and_us = ["secured"]
+   beg_pow2 = 9
+   end_pow2 = 14
+   iterations = end_pow2 - beg_pow2
+   
    # Reg Ds8 buf size 2^9 - 2^14
    for i in range(len(s_and_us)):
        for j in range(len(types)):
@@ -288,8 +312,8 @@ if __name__ == "__main__":
 
                vec_len = np.power(2, beg_pow2)
                for h in range(iterations):
-                   print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
-                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len))
+                   print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
+                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
                    vec_len = 2*vec_len
 
    # Exp2 Ds8 buf size 2^9 - 2^14
@@ -301,10 +325,48 @@ if __name__ == "__main__":
 
                vec_len = np.power(2, beg_pow2)
                for h in range(iterations):
-                   print(s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
-                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
+                   print(s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
+                   gen_pca_samples(track, vec_len, vec_num, max_shift, directory + s_and_us[i] + "_" + types[j] + "_exp2_track" + str(k) + "_veclen" + str(vec_len) + "_ds8")
                    vec_len = 2*vec_len
    '''
+
+   beg_pow2_len = 9
+   end_pow2_len = 13
+   iterations_len = end_pow2_len - beg_pow2_len
+   beg_pow2_num = 5
+   end_pow2_num = 9
+   iterations_num = end_pow2_num - beg_pow2_num
+
+   for i in range(len(types)):
+      for j in range(1,5):
+         track_name = "secured/" + types[i] + "/exp2/" + "secured_" + types[i] + "_exp2_track" + str(j) + ".wav"
+         track = get_audio(data_directory, track_name)
+         
+         vec_len = np.power(2, beg_pow2_len)
+         for k in range(iterations_len):
+             vec_num = np.power(2, beg_pow2_num)
+             for h in range(iterations_num):
+                 pickle_name = "secured_" + types[i] + "_exp2_track" + str(j) + "_veclen" + str(vec_len) + "_vecnum" + str(vec_num)
+                 print(pickle_name)
+                 gen_pca_samples(track, vec_len, vec_num, max_shift, directory + pickle_name)
+                 vec_num = 2*vec_num
+             vec_len = 2*vec_len
+
+   for i in range(len(types)):
+      for j in range(1,5):
+         track_name = "secured/" + types[i] + "/" + s_and_us[i] + "_" + types[i] + "_48khz_track" + str(j) + ".wav"
+         track = get_audio(data_directory, track_name)
+
+         vec_len = np.power(2, beg_pow2_len)
+         for k in range(iterations_len):
+             vec_num = np.power(2, beg_pow2_num)
+             for h in range(iterations_num):
+                 pickle_name = "secured_" + types[i] + "_track" + str(j) + "_veclen" + str(vec_len) + "_vecnum" + str(vec_num)
+                 print(pickle_name)
+                 gen_pca_samples(track, vec_len, vec_num, max_shift, directory + pickle_name)
+                 vec_num = 2*vec_num
+             vec_len = 2*vec_len
+ 
    data_directory = data_directory + "/secured"
    labels = ["Near", "Medium", "Far"]
    titles = ["Conversation", "Cooking Ambient", "Music", "Room Ambient"]

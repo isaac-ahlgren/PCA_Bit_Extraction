@@ -44,12 +44,7 @@ void levenshtein_dist_shift_pca(float* buf1, float* buf2, int vec_len, int vec_n
 void pca_shifted_calcs(float* buf, int vec_len, int vec_num, int max_shift, float* result) {
     threaded_calc_pca(buf, vec_len, vec_num, max_shift, MAX_THREAD, result);
 }
-/*
-float buf[8192*64 + 5000] = {1};
-float res[64*5000];
 
-int main()
-{
-    pca_shifted_calcs(buf, 8192, 64, 5000, res);
+void eig_shifted_calcs(float* buf, int vec_len, int vec_num, int max_shift, float* convergence, float* eig_vecs) {
+    threaded_calc_pca_eig(buf, vec_len, vec_num, max_shift, MAX_THREAD, convergence, eig_vecs);
 }
-*/

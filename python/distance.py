@@ -7,7 +7,7 @@ from graph import compare_bits
 import ctypes
 import matplotlib.pyplot as plt
 
-def gen_pca_samples(x, vec_len, vec_num, max_shift, pickle_name):
+def gen_pca_samples(x, vec_len, vec_num, eig_vecs, max_shift, pickle_name):
     lib = ctypes.cdll.LoadLibrary("./distance_calc.so")   
 
     gen_pca_samples_c = lib.pca_shifted_calcs
@@ -16,37 +16,37 @@ def gen_pca_samples(x, vec_len, vec_num, max_shift, pickle_name):
                                   ctypes.c_int,
                                   ctypes.c_int,
                                   ctypes.c_int,
-                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
-
-    results = np.zeros(vec_num*max_shift, dtype=np.float32)
-
-    gen_pca_samples_c(x, vec_len, vec_num, max_shift, results)
-
-    split_results = np.array(np.split(results, max_shift))
-
-    pickle_it(pickle_name, split_results)
-
-def gen_eig_vec(x, vec_len, vec_num, max_shift, conv_pickle_name, eig_pickle_name):
-    lib = ctypes.cdll.LoadLibrary("./distance_calc.so")
-
-    gen_pca_samples_c = lib.eig_shifted_calcs
-    gen_pca_samples_c.restype = None
-    gen_pca_samples_c.argtypes = [np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                                  ctypes.c_int,
-                                  ctypes.c_int,
                                   ctypes.c_int,
                                   np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS")]
+                                  np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                                  np.ctypeslib.ndpointer(ctypes.c_int, flags="C_CONTIGUOUS")]
 
-    conv_results = np.zeros(max_shift, dtype=np.float32)
-    eig_results = np.zeros(max_shift*(vec_len/2 + 1), dtype=np.float32)
+    pca_samples = np.zeros(vec_num*eig_vecs*max_shift, dtype=np.float32)
 
-    gen_pca_samples_c(x, vec_len, vec_num, max_shift, conv_results, eig_results)
+    eig_vectors = np.zeros(int(vec_len/2 + 1)*eig_vecs*max_shift, dtype=np.float32)
 
-    eig_split_results = np.array(np.split(eig_results, max_shift))
+    convergence = np.zeros(eig_vecs*max_shift, dtype=np.int32)
 
-    pickle_it(eig_pickle_name, eig_split_results)
-    pickle_it(conv_pickle_name, conv_results)
+    gen_pca_samples_c(x, vec_len, vec_num, eig_vecs, max_shift, pca_samples, eig_vectors, convergence)
+
+    split_pca_samples = np.array(np.split(pca_samples, max_shift))
+    pca_samples = list()
+    for i in range(max_shift):
+        pca_samples.append(np.array(np.split(split_pca_samples[i], eig_vecs)))
+
+    pickle_it(pickle_name + "_pca_samples", np.array(pca_samples))
+
+    split_eig_vectors = np.array(np.split(eig_vectors, max_shift))
+
+    eig_vectors = list()
+    for i in range(max_shift):
+        eig_vectors.append(np.array(np.split(split_eig_vectors[i], eig_vecs)))
+
+    pickle_it(pickle_name + "_eigs", np.array(eig_vectors))
+
+    split_convergence = np.array(np.split(convergence, eig_vecs))
+    
+    pickle_it(pickle_name + "_conv", split_convergence)
 
 def gen_rmse_fft_n_time(buf1, buf2, vec_len, shift_len):
     ret_fft = np.zeros(shift_len)
@@ -80,8 +80,7 @@ def gen_cos_fft_n_time(buf1, buf2, vec_len, shift_len):
         ret_time[i] = distance.cosine(host, device)
         ret_fft[i] = distance.cosine(np.abs(np.fft.fft(host)), np.abs(np.fft.fft(device)))
     return ret_fft, ret_time
-
-    
+ 
 if __name__ == "__main__":
    repo_directory = "/home/ikey/repos/PCA_Bit_Extraction"
    obs_vector_length = 2048
@@ -103,8 +102,9 @@ if __name__ == "__main__":
    beg_pow2 = 13
    end_pow2 = 15
    iterations = end_pow2 - beg_pow2
-    
    
+   track = get_audio(data_directory + "/secured/conversation/", "secured_conversation_48khz_track1.wav")
+   gen_pca_samples(track, 1024, 64, 4, 2, "test")
     
    '''
    # Calc time and freq domain distances

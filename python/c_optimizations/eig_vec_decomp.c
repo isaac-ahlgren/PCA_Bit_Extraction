@@ -40,7 +40,6 @@ struct eig_decomp_args* alloc_eig_args(uint32_t dim_size, uint32_t eig_vec_num, 
     args->s = malloc(sizeof(float)*dim_size);
     args->Sw = malloc(dim_size * sizeof(float));
     args->deflation_matrix = malloc(dim_size*dim_size*sizeof(float));
-    args->Sw_wTSw = malloc(dim_size * sizeof(float));
 
     for (int i = 0; i < dim_size; i++)
     {
@@ -57,7 +56,6 @@ void free_eig_args(struct eig_decomp_args* args)
      free(args->eig_vec);
      free(args->Sw);
      free(args->deflation_matrix);
-     free(args->Sw_wTSw);
      free(args);
 }
 
@@ -180,7 +178,6 @@ void eig_decomp(float* matrix, int* convergence, uint32_t max_shift, struct eig_
     int i,k;
     float* eig_vec = args->eig_vec;
     float* Sw = args->Sw;
-    float* Sw_wTSw = args->Sw_wTSw;
     float* deflation_matrix = args->deflation_matrix;
     uint32_t nvecs = args->eig_vec_num;
     uint32_t dim_size = args->dim_size;
@@ -189,7 +186,7 @@ void eig_decomp(float* matrix, int* convergence, uint32_t max_shift, struct eig_
 
         // First, use power iteration to extract the dominant eigenvector of matrix.
         convergence[k*max_shift] = power_iteration(matrix, args);
-        memcpy(eig_vec, &args->eig_vectors[k*dim_size], dim_size * sizeof(float));
+        memcpy(&args->eig_vectors[k*dim_size], eig_vec, dim_size * sizeof(float));
 
         // Deflate the dominant eigenvector from the matrid
         // S = S - w*w'*S*w*w'
@@ -212,7 +209,7 @@ void eig_decomp(float* matrix, int* convergence, uint32_t max_shift, struct eig_
         //printf("Inner product w'Sw = %f\n", wTSw);
 
         // Element-wise multiplication.
-        memcpy(Sw, Sw_wTSw, dim_size * sizeof(float));
+        memcpy(Sw, eig_vec, dim_size * sizeof(float));
         for(i = 0; i < dim_size; i++) {
             Sw[i] *= wTSw;
         }
@@ -221,7 +218,7 @@ void eig_decomp(float* matrix, int* convergence, uint32_t max_shift, struct eig_
         //print_matrix(Sw, args->dim_size, 1);
 
         // Finally, do the outer product between w and w'*S*w*w', which is stored in variable Sw
-        outer_product(Sw_wTSw, Sw, dim_size, deflation_matrix);
+        outer_product(eig_vec, Sw, dim_size, deflation_matrix);
 
         //printf("Deflation matrix, round %d\n", k);
         //print_matrix(deflation_matrix, args->dim_size, args->dim_size);

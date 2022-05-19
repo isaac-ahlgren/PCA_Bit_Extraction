@@ -36,7 +36,7 @@ void* calc_fft_pca(void* input)
     float* out_buf = &inp->out_buf[inp->out_start_position];
 
     for (int i = 0; i < inp->shift_len; i++) {
-       fft_pca(buf + i, out_buf + i*inp->output_len, conv_buf + i*eig_nums*inp->shift_len, eig_buffer + i*eig_len*eig_nums, inp->args, inp->max_shift);
+       fft_pca(buf + i, out_buf + i*inp->output_len, conv_buf + i, eig_buffer + i*eig_len*eig_nums, inp->args, inp->max_shift);
     }
 }
 
@@ -64,7 +64,7 @@ void threaded_calc_pca(float* buf, uint32_t vec_len, uint32_t vec_num, uint32_t 
         eig_inp[i].eig_buffer_position = i*shift_len*(vec_len/2 + 1)*eig_vec_num;
         eig_inp[i].eig_buffer = eigen_vectors;
 	eig_inp[i].convergence_buffer = convergence;
-	eig_inp[i].conv_buffer_position = i*shift_len
+	eig_inp[i].conv_buffer_position = i*shift_len;
 
         pthread_create(&threads[i], 0, &calc_fft_pca, (void*) &eig_inp[i]);
     }

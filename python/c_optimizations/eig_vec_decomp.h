@@ -9,7 +9,6 @@ struct eig_decomp_args {
     float*   eig_vectors;
     float*   eig_vec;
     float*   Sw;
-    float*   Sw_wTSw;
     float*   deflation_matrix;
     float    err_tol;          // error tolerated in the eigenvector
 };

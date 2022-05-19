@@ -11,9 +11,6 @@ TEST_TARGET = test.o
 KISS_FFT = ./libkissfft-float.a
 
 CFILES = \
-	distance.c \
-	threaded_distance.c \
-	threaded_pca_calc.c \
 	fft_wrapper.c \
 	pca_wrapper.c \
 	eig_vec_decomp.c \

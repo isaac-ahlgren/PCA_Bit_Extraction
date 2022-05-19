@@ -11,12 +11,10 @@ struct fft_pca_args {
     float* fft_buf;
     float* cov_mat;
     float* cov_mat_means;
-    float* eig_vec;
 };
 
-void fft_pca(float* input_buffer, float* output_buffer, void* args);
-void fft_pca_eig(float* input_buffer, float* convergence, float* eigen_vectors, void* args);
-struct fft_pca_args* alloc_fft_pca_args(uint32_t vec_len, uint32_t vec_num);
+void fft_pca(float* input_buffer, float* output_buffer, int* convergence, float* eigen_vectors, void* args, int max_shift);
+struct fft_pca_args* alloc_fft_pca_args(uint32_t vec_len, uint32_t vec_num, uint32_t eig_vec_num);
 void free_fft_pca_args(struct fft_pca_args* args);
 
 #endif

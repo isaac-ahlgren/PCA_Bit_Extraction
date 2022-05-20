@@ -2,8 +2,6 @@
 #include "eig_vec_decomp.h"
 #include <string.h>
 
-
-
 void normalize(float* vec, uint32_t vec_len);
 float l1_error(float* new_vec, float* old_vec, uint32_t vec_len);
 void matrix_vec_mult(float* mat, uint32_t dim_size, float* vec, float* new_vec);

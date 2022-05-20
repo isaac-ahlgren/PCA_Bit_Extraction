@@ -49,7 +49,7 @@ struct fft_pca_args* alloc_fft_pca_args(uint32_t vec_len, uint32_t vec_num, uint
     struct fft_pca_args* args = malloc(sizeof(struct fft_pca_args));
     
     args->f_args = alloc_fft_args(vec_len);
-    args->e_args = alloc_eig_args((vec_len/2 + 1), eig_vec_num, 10000, 0.01);
+    args->e_args = alloc_eig_args((vec_len/2 + 1), eig_vec_num, 10000, 0.001);
     args->vec_len = vec_len;
     args->vec_num = vec_num;
     args->fft_buf = malloc(sizeof(float)*(vec_len/2 + 1)*vec_num);

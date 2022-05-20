@@ -7,7 +7,7 @@ from graph import compare_bits
 import ctypes
 import matplotlib.pyplot as plt
 
-def gen_pca_samples(x, vec_len, vec_num, eig_vecs, max_shift, pickle_name):
+def gen_pca_samples(x, vec_len, vec_num, eig_vecs, max_shift, pickle_name, directory):
     lib = ctypes.cdll.LoadLibrary("./distance_calc.so")   
 
     gen_pca_samples_c = lib.pca_shifted_calcs
@@ -34,7 +34,7 @@ def gen_pca_samples(x, vec_len, vec_num, eig_vecs, max_shift, pickle_name):
     for i in range(max_shift):
         pca_samples.append(np.array(np.split(split_pca_samples[i], eig_vecs)))
 
-    pickle_it(pickle_name + "_pca_samples", np.array(pca_samples))
+    pickle_it(directory + pickle_name + "_pca_samples", np.array(pca_samples))
 
     split_eig_vectors = np.array(np.split(eig_vectors, max_shift))
 
@@ -42,11 +42,11 @@ def gen_pca_samples(x, vec_len, vec_num, eig_vecs, max_shift, pickle_name):
     for i in range(max_shift):
         eig_vectors.append(np.array(np.split(split_eig_vectors[i], eig_vecs)))
 
-    pickle_it(pickle_name + "_eigs", np.array(eig_vectors))
+    pickle_it(directory + pickle_name + "_eigs", np.array(eig_vectors))
 
     split_convergence = np.array(np.split(convergence, eig_vecs))
     
-    pickle_it(pickle_name + "_conv", split_convergence)
+    pickle_it(directory + pickle_name + "_conv", split_convergence)
 
 def gen_rmse_fft_n_time(buf1, buf2, vec_len, shift_len):
     ret_fft = np.zeros(shift_len)
@@ -92,20 +92,32 @@ if __name__ == "__main__":
 
    directory = graph_directory + "pickled/"
    
-   vec_labels = ["512 Length Vector", "1024 Length Vector", "2048 Length Vector", "4096 Length Vector"]
-   labels = ["Near", "Medium", "Far"]
-   
-   s_and_us = ["secured", "unsecured"]
    types = ["conversation", "cooking_audio", "music", "room_audio"]
-   max_shift = 5000
-   vec_num = 64
-   beg_pow2 = 13
-   end_pow2 = 15
-   iterations = end_pow2 - beg_pow2
+   max_shift = 200
+   beg_pow2_len = 9
+   end_pow2_len = 13
+   beg_pow2_num = 4
+   end_pow2_num = 8
+   beg_pow2_eigs = 0
+   end_pow2_eigs = 4
+   len_iterations = end_pow2_len - beg_pow2_len
+   num_iterations = end_pow2_num - beg_pow2_num
+   eig_iterations = end_pow2_eigs - beg_pow2_eigs
+ 
+   for i in range(len(types)):
+       for j in range(len_iterations):
+           vec_len = np.power(2, beg_pow2_len)
+           for k in range(num_iterations):
+               vec_num = np.power(2, beg_pow2_num)
+               for l in range(eig_iterations):
+                   eig_num = np.power(2, beg_pow2_eigs)
+                   for h in range(2,5):
+                       track_name = "secured_" + types[i] + "_48khz_track" + str(h) + ".wav"
+                       track = get_audio(data_directory + "/secured/" + types[i] + "/", track_name)
+                       name = types[i] + "_veclen" + str(vec_len) + "_vecnum" + str(vec_num) + "_eignum" + str(eig_num)
+                       print(name)
+                       gen_pca_samples(track, vec_len, vec_num, eig_num, max_shift, name, directory)
    
-   track = get_audio(data_directory + "/secured/conversation/", "secured_conversation_48khz_track1.wav")
-   gen_pca_samples(track, 512, 8, 4, 15, "test")
-    
    '''
    # Calc time and freq domain distances
    for i in range(len(types)):

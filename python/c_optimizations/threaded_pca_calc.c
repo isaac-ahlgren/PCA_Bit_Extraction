@@ -61,6 +61,7 @@ void threaded_calc_pca(float* buf, uint32_t vec_len, uint32_t vec_num, uint32_t 
 
 	eig_inp[i].args = &inputs[i];
         eig_inp[i].eig_len = vec_len/2 + 1;
+	eig_inp[i].eig_nums = eig_vec_num;
         eig_inp[i].eig_buffer_position = i*shift_len*(vec_len/2 + 1)*eig_vec_num;
         eig_inp[i].eig_buffer = eigen_vectors;
 	eig_inp[i].convergence_buffer = convergence;

@@ -86,7 +86,7 @@ if __name__ == "__main__":
    obs_vector_length = 2048
    vec_num = 64
    max_shift = 5000
-   data_directory = "/home/ikey/repos/PCA_Bit_Extraction/data/audio"
+   data_directory = "/home/desktop/repo/PCA_Bit_Extraction/audio"
 
    graph_directory = "./graphs/"
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
    iterations = end_pow2 - beg_pow2
    
    track = get_audio(data_directory + "/secured/conversation/", "secured_conversation_48khz_track1.wav")
-   gen_pca_samples(track, 1024, 64, 4, 2, "test")
+   gen_pca_samples(track, 512, 8, 4, 15, "test")
     
    '''
    # Calc time and freq domain distances

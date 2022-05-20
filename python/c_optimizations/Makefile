@@ -22,7 +22,7 @@ all: $(CFILES)
 	mv $(TARGET) ..
 
 test: $(CFILES)
-	$(CC) $(TEST_CFLAGS) -o $(TEST_TARGET) $(CFILES) $(KISS_FFT)
+	$(CC) $(TEST_CFLAGS) -o $(TEST_TARGET) $(CFILES) -lpthread -lm $(KISS_FFT)
 
 clean:
 	rm ../$(TARGET)

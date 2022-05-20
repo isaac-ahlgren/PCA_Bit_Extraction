@@ -83,9 +83,9 @@ void fft_obs_matrix(float* input, float* output, uint32_t vec_len, uint32_t vec_
     } 
 }
 
-void fix_output(float* output, uint32_t output_len, uint32_t vec_nums)
+void fix_eig_vec(float* output, uint32_t eig_vec_len, uint32_t eig_vec_num)
 {
-    for (int i = 0; i < output_len*vec_nums; i++)
+    for (int i = 0; i < eig_vec_len*eig_vec_num; i++)
     {
 	float tmp = output[i];
         output[i] = (tmp < 0) ? tmp*-1 : tmp;
@@ -130,7 +130,7 @@ void fft_pca(float* input_buffer, float* output_buffer, int* convergence, float*
         eigen_vectors[i] = eig_vecs[i];
     }
 
-    fix_output(eig_vecs, vec_len, vec_num);
+    fix_eig_vec(eig_vecs, vec_len, eig_vec_num);
 
     project_data(fft_buf, eig_vecs, output_buffer, vec_len, vec_num, eig_vec_num);
 }

@@ -54,7 +54,7 @@ void threaded_calc_pca(float* buf, uint32_t vec_len, uint32_t vec_num, uint32_t 
         inputs[i].args = (void*) alloc_fft_pca_args(vec_len, vec_num, eig_vec_num);
         inputs[i].buf = buf;
         inputs[i].out_buf = pca_samples;
-        inputs[i].output_len = vec_num;
+        inputs[i].output_len = vec_num*eig_vec_num;
         inputs[i].input_len = vec_len*vec_num;
         inputs[i].shift_len = shift_len;
         inputs[i].max_shift = max_shift;

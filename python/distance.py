@@ -122,10 +122,10 @@ if __name__ == "__main__":
                            name = types[i] + "_veclen" + str(vec_len) + "_vecnum" + str(vec_num) + "_eignum" + str(eig_num) + "_ds" + str(ds_num)
                            print(name)
                            gen_pca_samples(track, vec_len, vec_num, eig_num, max_shift, name, directory)
-                   ds_num *= 2
-               eig_num *= 2
-           vec_num *= 2
-       vec_len *= 2
+                       ds_num *= 2
+                   eig_num *= 2
+               vec_num *= 2
+           vec_len *= 2
    
    '''
    # Calc time and freq domain distances

@@ -86,37 +86,46 @@ if __name__ == "__main__":
    obs_vector_length = 2048
    vec_num = 64
    max_shift = 5000
-   data_directory = "/home/desktop/repo/PCA_Bit_Extraction/audio"
+   data_directory = repo_directory + "/data/audio"
 
    graph_directory = "./graphs/"
 
    directory = graph_directory + "pickled/"
    
-   types = ["conversation", "cooking_audio", "music", "room_audio"]
-   max_shift = 200
+   types = ["conversation", "cooking_audio", "music"]
+   max_shift = 5000
    beg_pow2_len = 9
    end_pow2_len = 13
-   beg_pow2_num = 4
-   end_pow2_num = 8
-   beg_pow2_eigs = 0
-   end_pow2_eigs = 4
+   beg_pow2_num = 5
+   end_pow2_num = 9
+   beg_pow2_eigs = 4
+   end_pow2_eigs = 5
+   beg_pow2_ds = 1
+   end_pow2_ds = 4
    len_iterations = end_pow2_len - beg_pow2_len
    num_iterations = end_pow2_num - beg_pow2_num
    eig_iterations = end_pow2_eigs - beg_pow2_eigs
+   ds_iterations = end_pow2_ds - beg_pow2_ds 
  
    for i in range(len(types)):
+       vec_len = np.power(2, beg_pow2_len)
        for j in range(len_iterations):
-           vec_len = np.power(2, beg_pow2_len)
+           vec_num = np.power(2, beg_pow2_num)
            for k in range(num_iterations):
-               vec_num = np.power(2, beg_pow2_num)
+               eig_num = np.power(2, beg_pow2_eigs)
                for l in range(eig_iterations):
-                   eig_num = np.power(2, beg_pow2_eigs)
-                   for h in range(2,5):
-                       track_name = "secured_" + types[i] + "_48khz_track" + str(h) + ".wav"
-                       track = get_audio(data_directory + "/secured/" + types[i] + "/", track_name)
-                       name = types[i] + "_veclen" + str(vec_len) + "_vecnum" + str(vec_num) + "_eignum" + str(eig_num)
-                       print(name)
-                       gen_pca_samples(track, vec_len, vec_num, eig_num, max_shift, name, directory)
+                   ds_num = np.power(2, beg_pow2_ds)
+                   for m in range(ds_iterations):
+                       for h in range(1,5):
+                           track_name = "secured_" + types[i] + "_48khz_track" + str(h) + "_ds" + str(ds_num) +  ".wav"
+                           track = get_audio(data_directory + "/secured/" + types[i], track_name)
+                           name = types[i] + "_veclen" + str(vec_len) + "_vecnum" + str(vec_num) + "_eignum" + str(eig_num) + "_ds" + str(ds_num)
+                           print(name)
+                           gen_pca_samples(track, vec_len, vec_num, eig_num, max_shift, name, directory)
+                   ds_num *= 2
+               eig_num *= 2
+           vec_num *= 2
+       vec_len *= 2
    
    '''
    # Calc time and freq domain distances

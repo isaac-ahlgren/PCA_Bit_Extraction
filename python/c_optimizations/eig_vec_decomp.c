@@ -1,5 +1,6 @@
 #include "headers.h"
 #include "eig_vec_decomp.h"
+#include "simd_matrix_vector_mul.h"
 #include <string.h>
 
 void normalize(float* vec, uint32_t vec_len);
@@ -148,7 +149,7 @@ int power_iteration(float* matrix, struct eig_decomp_args* args)
 
     for (i = 0; i < execs; i++)
     {
-        matrix_vec_mult(mat, dim_size, eig_vec, s);
+        matrix_vec_mult_avx(mat, dim_size, eig_vec, s);
         normalize(s, dim_size);
         err = l1_error(s, eig_vec, dim_size);
 
@@ -185,6 +186,11 @@ void eig_decomp(float* matrix, int* convergence, uint32_t max_shift, struct eig_
         // First, use power iteration to extract the dominant eigenvector of matrix.
         convergence[k*max_shift] = power_iteration(matrix, args);
         memcpy(&args->eig_vectors[k*dim_size], eig_vec, dim_size * sizeof(float));
+
+        if (convergence[k*max_shift] == args->execs)
+        {
+            printf("EIGEN VECTOR: %d\n", k);
+        }
 
         // Deflate the dominant eigenvector from the matrid
         // S = S - w*w'*S*w*w'

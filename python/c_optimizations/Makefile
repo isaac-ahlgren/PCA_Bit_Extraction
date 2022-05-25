@@ -2,7 +2,7 @@
 
 CC = gcc
 
-CFLAGS = -g -fPIC -shared -D__X86_SSE -O0 -march=native -Wall -lpthread -lm
+CFLAGS = -g -fPIC -shared -D__X86_SSE -O1 -march=native -Wall -lpthread -lm
 TEST_CFLAGS = -g -Wall -lpthread -lm
 
 TARGET = distance_calc.so
@@ -15,6 +15,7 @@ CFILES = \
 	fft_wrapper.c \
 	pca_wrapper.c \
 	eig_vec_decomp.c \
+	simd_matrix_vector_mul.c \
 	main.c
 
 all: $(CFILES)
